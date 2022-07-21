@@ -1,2 +1,2 @@
 # feature-selection
-Final assinment of Computational Learning course
+Final assignment of Computational Learning course
