@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -70,7 +71,8 @@ def preprocess_sk(input_path, output_path):
 def preprocess_microbiomic(input_path, output_path):
     df = pd.read_csv(input_path, index_col=0).T
     y = pd.Series(df.index, index=df.index).apply(lambda x: re.sub(r'\.\d+', '', x))
-    df[LABEL_COL] = y
+    class_to_values = {v: i for i, v in enumerate(y.value_counts().index)}
+    df[LABEL_COL] = y.map(class_to_values)
     df.to_csv(output_path, index=with_index)
 
 
