@@ -65,6 +65,10 @@ def preprocess_sk(input_path, output_path):
     x, y = mat['X'], mat['Y']
     df = pd.DataFrame(x)
     df[LABEL_COL] = y
+
+    class_to_values = {v: i for i, v in enumerate(df[LABEL_COL].value_counts().index)}
+    df[LABEL_COL] = df[LABEL_COL].map(class_to_values)
+
     df.to_csv(output_path, index=with_index)
 
 
