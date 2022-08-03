@@ -26,7 +26,7 @@ class DataPreprocessor:
         :param x: dataframe, where the last column is the target column
         :return:
         """
-        assert x.columns[-1] == LABEL_COL, 'last column is not "y", check dataframe format'
+        assert LABEL_COL in x.columns, f'label column "{LABEL_COL}" is not in dataframe, check dataframe format'
 
         # handle missing labels
         if x[LABEL_COL].isna().mean() > self.y_nan_percent:
@@ -48,7 +48,7 @@ class DataPreprocessor:
         self.normalizer.fit(X)
 
     def transform(self, x):
-        assert x.columns[-1] == LABEL_COL, 'last column is not "y", check dataframe format'
+        assert LABEL_COL in x.columns, f'label column "{LABEL_COL}" is not in dataframe, check dataframe format'
 
         # handle missing labels
         if self.y_nan_class is None:
