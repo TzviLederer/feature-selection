@@ -1,2 +1,7 @@
 mrmr_selection
 ReliefF
+numpy
+sklearn
+scikit-learn
+pandas
+scipy
