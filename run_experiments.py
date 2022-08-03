@@ -48,8 +48,8 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
             outputs.append({'fit_time': fit_time,
                             'fs_fit_time': fs_fit_time,
                             'fold': i,
-                            'selected_features_names': fs_top_k.keys(),
-                            'selected_features_scores': fs_top_k.values(),
+                            'selected_features_names': list(fs_top_k.keys()),
+                            'selected_features_scores': list(fs_top_k.values()),
                             'metric': metric,
                             'metric_val': metric_val,
                             **log_experiment_params})
