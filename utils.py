@@ -1,70 +1,37 @@
-from pathlib import Path
+import numpy as np
+from sklearn.metrics import precision_recall_curve, auc, make_scorer
+from sklearn.preprocessing import label_binarize
+from sklearn.model_selection import LeavePOut, LeaveOneOut, KFold
 
-import pandas as pd
-from pandas.api.types import is_numeric_dtype
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import PowerTransformer
-
-LABEL_COL = 'y'
+from data_formatting import LABEL_COL
 
 
-class DataPreprocessor:
-    def __init__(self, y_nan_percent=0.1):
-        """
-        :param y_nan_percent: float, if the percentage of NaNs in y is more than that, we consider the NaN as an
-                              additional class
-        """
-        self.imputer = SimpleImputer(strategy='mean')
-        self.variance_thr = VarianceThreshold()
-        self.normalizer = PowerTransformer()
+def _pr_auc(y_true, y_score):
+    # https://sinyi-chou.github.io/python-sklearn-precision-recall/
+    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
+    return auc(recall, precision)
 
-        self.y_nan_percent = y_nan_percent
-        self.y_nan_class = None
 
-    def fit(self, x):
-        """
-        :param x: dataframe, where the last column is the target column
-        :return:
-        """
-        assert x.columns[-1] == LABEL_COL, 'last column is not "y", check dataframe format'
+def pr_auc(y_true, y_score):
+    classes = np.unique(y_true)
+    n_classes = len(classes)
+    if n_classes > 2:
+        y_true_bin = label_binarize(y_true, classes=classes)
+        return np.mean([_pr_auc(y_true_bin[:, i], y_score[:, i]) for i in range(n_classes)])
+    else:
+        return _pr_auc(y_true, y_score)
 
-        # fit features imputer
-        self.imputer.fit(x.iloc[:, :-1])
 
-        # fit target imputer
-        if x[LABEL_COL].isna().mean() > self.y_nan_percent:
-            self.y_nan_class = x[LABEL_COL].max() + 1
+def get_cv(df):
+    if len(df) < 50:
+        return LeavePOut(2)
+    elif 50 <= len(df) <= 100:
+        return LeaveOneOut()
+    elif 100 < len(df) < 1000:
+        return KFold(n_splits=10)
+    return KFold(n_splits=5)
 
-        # categorical encoding
-        if any(list(map(lambda c: not is_numeric_dtype(x[c]), x.columns))):
-            raise NotImplementedError('Categorical values are not implemented yet')
 
-        # variance threshold
-        x = self.variance_thr.fit_transform(x)
-
-        # normalization
-        x = self.normalizer.fit_transform(x)
-
-    def transform(self, x):
-        assert x.columns[-1] == LABEL_COL, 'last column is not "y", check dataframe format'
-
-        # features imputation
-        x.iloc[:, :-1] = self.imputer.transform(x.iloc[:, :-1])
-
-        # target imputation
-        if self.y_nan_class is None:
-            x = x[~x[LABEL_COL].isna()]
-        else:
-            x[LABEL_COL].fillna(self.y_nan_class, inplace=True)
-        indexes = x.index
-
-        # variance threshold
-        x = self.variance_thr.transform(x)
-
-        # normalization
-        x[:, :-1] = self.normalizer.transform(x)[:, :-1]
-
-        x = pd.DataFrame(x, columns=self.variance_thr.get_feature_names_out(), index=indexes)
-        x[LABEL_COL] = x[LABEL_COL].astype(int)
-        return x
+def calculate_metrics_scores(estimator, df_val, metrics_dict):
+    return {k: make_scorer(metric)(estimator, df_val.drop(LABEL_COL, axis=1), df_val[LABEL_COL])
+            for k, metric in metrics_dict.items()}
