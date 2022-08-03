@@ -4,7 +4,7 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import PowerTransformer
+from sklearn.preprocessing import PowerTransformer, LabelEncoder
 from data_formatting import LABEL_COL
 
 
@@ -17,6 +17,7 @@ class DataPreprocessor:
         self.imputer = SimpleImputer(strategy='mean')
         self.variance_thr = VarianceThreshold()
         self.normalizer = PowerTransformer()
+        self.le = {}
 
         self.y_nan_percent = y_nan_percent
         self.y_nan_class = None
@@ -32,11 +33,12 @@ class DataPreprocessor:
         if x[LABEL_COL].isna().mean() > self.y_nan_percent:
             self.y_nan_class = x[LABEL_COL].max() + 1
 
-        X = x.drop(columns=[LABEL_COL])
+        X = x.drop(columns=[LABEL_COL]).copy()
 
         # categorical encoding
-        if any(list(map(lambda c: not is_numeric_dtype(x[c]), x.columns))):
-            raise NotImplementedError('Categorical values are not implemented yet')
+        for col in x.select_dtypes(include=['object']).columns:
+            self.le[col] = LabelEncoder()
+            X[col] = self.le[col].fit_transform(x[col].astype(str))
 
         # imputing
         X = pd.DataFrame(self.imputer.fit_transform(X), columns=X.columns)
@@ -60,8 +62,8 @@ class DataPreprocessor:
         y = x[LABEL_COL].astype(int)
 
         # categorical encoding
-        if any(list(map(lambda c: not is_numeric_dtype(x[c]), x.columns))):
-            raise NotImplementedError('Categorical values are not implemented yet')
+        for col in self.le.keys():
+            X[col] = self.le[col].transform(X[col].astype(str))
 
         # features imputation
         X = pd.DataFrame(self.imputer.transform(X), columns=X.columns)
