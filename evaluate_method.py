@@ -3,13 +3,15 @@ from itertools import product
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFdr
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, accuracy_score, matthews_corrcoef, make_scorer
+from sklearn.metrics import roc_auc_score, accuracy_score, matthews_corrcoef, make_scorer, precision_recall_curve, auc
 from sklearn.model_selection import LeavePOut, LeaveOneOut, KFold
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import label_binarize
 from sklearn.svm import SVC
 
 from utils import DataPreprocessor
@@ -17,8 +19,21 @@ from utils import DataPreprocessor
 LABEL_COL = 'y'
 
 
+def _pr_auc(y_true, y_score):
+    # https://sinyi-chou.github.io/python-sklearn-precision-recall/
+    precision, recall, thresholds = precision_recall_curve(y_true, y_score)
+    return auc(recall, precision)
+
+
 def pr_auc(y_true, y_score):
-    raise NotImplementedError('PR ROC has not been implemented yet')
+    classes = np.unique(y_true)
+    n_classes = len(classes)
+    if n_classes > 2:
+        y_true_bin = label_binarize(y_true, classes=classes)
+        return np.mean([_pr_auc(y_true_bin[:, i], y_score[:, i]) for i in range(n_classes)])
+    else:
+        return _pr_auc(y_true, y_score)
+
 
 
 def get_cv(df):
@@ -34,13 +49,14 @@ def get_cv(df):
 def main():
     models = {'nb': GaussianNB(),
               'svm': SVC(kernel='rbf'),
-              'lr': LogisticRegression(max_iter=10_000),
+              'lr': LogisticRegression(),
               'rf': RandomForestClassifier(),
               'knn': KNeighborsClassifier()}
 
     metrics = {'roc': roc_auc_score,
                'acc': accuracy_score,
-               'mcc': matthews_corrcoef}
+               'mcc': matthews_corrcoef,
+               'pr_auc': pr_auc}
 
     features_selectors = {'fdr': SelectFdr(alpha=0.1)}
 

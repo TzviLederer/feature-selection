@@ -56,7 +56,7 @@ class DataPreprocessor:
         if self.y_nan_class is None:
             x = x[~x[LABEL_COL].isna()]
         else:
-            x[LABEL_COL][x[LABEL_COL].isna()] = self.y_nan_class
+            x[LABEL_COL].fillna(self.y_nan_class, inplace=True)
         indexes = x.index
 
         # variance threshold
