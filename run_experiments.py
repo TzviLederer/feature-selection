@@ -77,15 +77,16 @@ def one_fold_pipe(df, estimator, features_selector, num_selected_features, prepr
     out_fs = features_selector.get_feature_names_out()
     fs_out_scores = {k: v for k, v in zip(features_selector.feature_names_in_, features_selector.scores_)
                      if k in out_fs}
-    fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True))
+    fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True)[:num_selected_features])
+    k_best = list(fs_out_scores.keys())
 
     # feature selection transform
     values_train = features_selector.transform(df_train.drop(LABEL_COL, axis=1))
-    df_train = pd.DataFrame(values_train, columns=out_fs, index=df_train.index)
+    df_train = pd.DataFrame(values_train, columns=out_fs, index=df_train.index)[k_best]
     df_train[LABEL_COL] = df.iloc[train_index][LABEL_COL]
 
     values_val = features_selector.transform(df_val.drop(LABEL_COL, axis=1))
-    df_val = pd.DataFrame(values_val, columns=out_fs, index=df_val.index)
+    df_val = pd.DataFrame(values_val, columns=out_fs, index=df_val.index)[k_best]
     df_val[LABEL_COL] = df.iloc[val_index][LABEL_COL]
 
     # fit model
