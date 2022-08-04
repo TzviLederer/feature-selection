@@ -2,6 +2,7 @@ import os
 import time
 from pathlib import Path
 import pandas as pd
+from sklearn.feature_selection import SelectKBest
 
 from data_preprocessor import DataPreprocessor
 from data_formatting import LABEL_COL
@@ -40,7 +41,7 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
 
     outputs = []
     for i, (train_index, val_index) in enumerate(cv.split(df)):
-        fs_fit_time, fit_time, metrics_scores, fs_top_k = one_fold_pipe(df, estimator, features_selector, num_selected_features,
+        fs_fit_time, fit_time, metrics_scores, fs_out_scores = one_fold_pipe(df, estimator, features_selector, num_selected_features,
                                                            preprocessor, train_index, val_index)
         print(f'Fold {i}, fs_fit: {fs_fit_time} secs, fit: {fit_time} secs, Results:')
         print(metrics_scores)
@@ -48,8 +49,8 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
             outputs.append({'fit_time': fit_time,
                             'fs_fit_time': fs_fit_time,
                             'fold': i,
-                            'selected_features_names': list(fs_top_k.keys()),
-                            'selected_features_scores': list(fs_top_k.values()),
+                            'selected_features_names': list(fs_out_scores.keys()),
+                            'selected_features_scores': list(fs_out_scores.values()),
                             'metric': metric,
                             'metric_val': metric_val,
                             **log_experiment_params})
@@ -71,30 +72,30 @@ def one_fold_pipe(df, estimator, features_selector, num_selected_features, prepr
     fs_fit_start_time = time.time()
     features_selector.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
     fs_fit_time = time.time() - fs_fit_start_time
+
+    # selected features scores
+    out_fs = features_selector.get_feature_names_out()
+    fs_out_scores = {k: v for k, v in zip(features_selector.feature_names_in_, features_selector.scores_)
+                     if k in out_fs}
+    fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True))
+
+    # feature selection transform
     values_train = features_selector.transform(df_train.drop(LABEL_COL, axis=1))
-    df_train = pd.DataFrame(values_train, columns=features_selector.get_feature_names_out(), index=df_train.index)
-    df_train[LABEL_COL] = df.iloc[train_index, -1]
+    df_train = pd.DataFrame(values_train, columns=out_fs, index=df_train.index)
+    df_train[LABEL_COL] = df.iloc[train_index][LABEL_COL]
 
     values_val = features_selector.transform(df_val.drop(LABEL_COL, axis=1))
-    df_val = pd.DataFrame(values_val, columns=features_selector.get_feature_names_out(), index=df_val.index)
-    df_val[LABEL_COL] = df.iloc[val_index, -1]
+    df_val = pd.DataFrame(values_val, columns=out_fs, index=df_val.index)
+    df_val[LABEL_COL] = df.iloc[val_index][LABEL_COL]
 
-    # select features
-    fs_scores = dict(zip(features_selector.feature_names_in_, features_selector.scores_))
-    fs_selected_features = dict(sorted(fs_scores.items(), key=lambda x: x[1], reverse=True)[:num_selected_features])
-    features = list(fs_selected_features.keys())
-
-    df_train = df_train[features + [LABEL_COL]]
-    df_val = df_val[features + [LABEL_COL]]
-
-    # fit
+    # fit model
     fit_start_time = time.time()
     estimator.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
     fit_time = time.time() - fit_start_time
 
-    # eval
+    # evaluate
     metrics_scores = calculate_metrics_scores(estimator, df_val, METRICS)
-    return fs_fit_time, fit_time, metrics_scores, fs_selected_features
+    return fs_fit_time, fit_time, metrics_scores, fs_out_scores
 
 
 if __name__ == '__main__':
