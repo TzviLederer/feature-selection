@@ -9,7 +9,7 @@ from utils import pr_auc
 
 MODELS = {'nb': GaussianNB(),
           'svm': SVC(kernel='rbf'),
-          'lr': LogisticRegression(),
+          'lr': LogisticRegression(max_iter=10_000),
           'rf': RandomForestClassifier(),
           'knn': KNeighborsClassifier()}
 
