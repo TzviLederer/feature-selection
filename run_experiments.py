@@ -11,15 +11,15 @@ from experiments_settings import METRICS, DATASETS_FILES, FEATURES_SELECTORS, MO
 from utils import get_cv, calculate_metrics_scores
 
 
-def run_all(logs_dir='logs'):
+def run_all(logs_dir='logs', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     for experiment_args in product(MODELS.keys(), DATASETS_FILES, FEATURES_SELECTORS.keys(), KS):
         print(f'Start Experiment, Settings: {experiment_args}')
-        output_log_file = run_experiment(*experiment_args, logs_dir=logs_dir)
+        output_log_file = run_experiment(*experiment_args, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
         print(f'Finished Experiment, Log file: {output_log_file}')
 
 
-def run_experiment(estimator_name, filename, filtering_algo, num_selected_features, logs_dir=None):
+def run_experiment(estimator_name, filename, filtering_algo, num_selected_features, logs_dir=None, overwrite_logs=True):
     estimator = MODELS[estimator_name]
     df = pd.read_csv(filename)
     cv = get_cv(df)
@@ -29,6 +29,11 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
     log_filename = f'{"_".join([estimator_name, Path(filename).name, filtering_algo, str(num_selected_features)])}.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
+
+    # skip this experiment if exists
+    if not overwrite_logs and Path(log_filename).exists():
+        print('Exists, skipping')
+        return log_filename
 
     log_experiment_params = {
         'learning_algo': estimator_name,

@@ -15,11 +15,10 @@ def _pr_auc(y_true, y_score):
 def pr_auc(y_true, y_score):
     classes = np.unique(y_true)
     n_classes = len(classes)
-    if n_classes > 2:
-        y_true_bin = label_binarize(y_true, classes=classes)
-        return np.mean([_pr_auc(y_true_bin[:, i], y_score[:, i]) for i in range(n_classes)])
-    else:
+    if n_classes <= 2:
         return _pr_auc(y_true, y_score)
+    y_true_bin = label_binarize(y_true, classes=classes)
+    return np.mean([_pr_auc(y_true_bin[:, i], y_score[:, i]) for i in range(n_classes)])
 
 
 def get_cv(df):
@@ -40,6 +39,13 @@ def _needs_proba(metric: str):
     raise NotImplementedError(f'You must determine if this score ({metric}) does need proba')
 
 
+def score_one_metric(metric, k, estimator, df_val):
+    try:
+        return make_scorer(metric, needs_proba=_needs_proba(k))(estimator, df_val.drop(LABEL_COL, axis=1),
+                                                                df_val[LABEL_COL])
+    except ValueError:
+        return None
+
+
 def calculate_metrics_scores(estimator, df_val, metrics_dict):
-    return {k: make_scorer(metric, needs_proba=_needs_proba(k))(estimator, df_val.drop(LABEL_COL, axis=1), df_val[LABEL_COL])
-            for k, metric in metrics_dict.items()}
+    return {k: score_one_metric(metric, k, estimator, df_val) for k, metric in metrics_dict.items()}
