@@ -1,6 +1,5 @@
+import os
 import re
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import scipy.io
@@ -122,4 +121,5 @@ def preprocess_arff(input_path, output_path):
 
 
 if __name__ == '__main__':
+    os.makedirs('data/preprocessed', exist_ok=True)
     main()
