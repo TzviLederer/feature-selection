@@ -1,18 +1,19 @@
 import os
 import time
+from itertools import product
 from pathlib import Path
-import pandas as pd
-from sklearn.feature_selection import SelectKBest
 
-from data_preprocessor import DataPreprocessor
+import pandas as pd
+
 from data_formatting import LABEL_COL
+from data_preprocessor import DataPreprocessor
 from experiments_settings import METRICS, DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS
 from utils import get_cv, calculate_metrics_scores
 
 
 def run_all(logs_dir='logs'):
     os.makedirs(logs_dir, exist_ok=True)
-    for experiment_args in zip(MODELS.keys(), DATASETS_FILES, FEATURES_SELECTORS.keys(), KS):
+    for experiment_args in product(MODELS.keys(), DATASETS_FILES, FEATURES_SELECTORS.keys(), KS):
         print(f'Start Experiment, Settings: {experiment_args}')
         output_log_file = run_experiment(*experiment_args, logs_dir=logs_dir)
         print(f'Finished Experiment, Log file: {output_log_file}')
@@ -40,9 +41,10 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
     }
 
     outputs = []
-    for i, (train_index, val_index) in enumerate(cv.split(df)):
-        fs_fit_time, fit_time, metrics_scores, fs_out_scores = one_fold_pipe(df, estimator, features_selector, num_selected_features,
-                                                           preprocessor, train_index, val_index)
+    for i, (train_index, val_index) in enumerate(cv.split(df, df['y'])):
+        fs_fit_time, fit_time, metrics_scores, fs_out_scores = one_fold_pipe(df, estimator, features_selector,
+                                                                             num_selected_features, preprocessor,
+                                                                             train_index, val_index)
         print(f'Fold {i}, fs_fit: {fs_fit_time} secs, fit: {fit_time} secs, Results:')
         print(metrics_scores)
         for metric, metric_val in metrics_scores.items():
@@ -100,7 +102,4 @@ def one_fold_pipe(df, estimator, features_selector, num_selected_features, prepr
 
 
 if __name__ == '__main__':
-    run_experiment(estimator_name='lr',
-                   filename='data/preprocessed/arcene.csv',
-                   filtering_algo='fdr',
-                   num_selected_features=5)
+    run_all()
