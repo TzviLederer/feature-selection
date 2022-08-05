@@ -1,10 +1,13 @@
 import time
 
+import numpy as np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
+from sklearn.compose import ColumnTransformer, make_column_transformer
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import PowerTransformer, LabelEncoder
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import PowerTransformer, LabelEncoder, OrdinalEncoder, StandardScaler
 from data_formatting import LABEL_COL
 
 
@@ -14,34 +17,37 @@ class DataPreprocessor:
         :param y_nan_percent: float, if the percentage of NaNs in y is more than that, we consider the NaN as an
                               additional class
         """
-        self.imputer = SimpleImputer(strategy='mean')
+        self.numeric_transformer = Pipeline([
+            ('impute', SimpleImputer(missing_values=np.nan, strategy="mean"))
+        ])
+
+        # impute and encode dummy variables for categorical data
+        self.categorical_transformer = Pipeline([
+            ('impute', SimpleImputer(missing_values=np.nan, strategy="constant")),
+            ('encode', OrdinalEncoder())
+        ])
+
+        self.data_transformer = None
+        self.le = LabelEncoder()
+
         self.variance_thr = VarianceThreshold()
         self.normalizer = PowerTransformer()
-        self.le = {}
 
         self.y_nan_percent = y_nan_percent
-        self.y_nan_class = None
+        self.ignore_nan_labels = False
 
-    def fit(self, x):
-        """
-        :param x: dataframe, where the last column is the target column
-        :return:
-        """
-        assert LABEL_COL in x.columns, f'label column "{LABEL_COL}" is not in dataframe, check dataframe format'
-
+    def fit(self, X, y):
         # handle missing labels
-        if x[LABEL_COL].isna().mean() > self.y_nan_percent:
-            self.y_nan_class = x[LABEL_COL].max() + 1
+        if y.isna().mean() > self.y_nan_percent:
+            self.ignore_nan_labels = True
 
-        X = x.drop(columns=[LABEL_COL]).copy()
+        self.le.fit(y)
 
-        # categorical encoding
-        for col in x.select_dtypes(include=['object']).columns:
-            self.le[col] = LabelEncoder()
-            X[col] = self.le[col].fit_transform(x[col].astype(str))
+        self.data_transformer = make_column_transformer(
+            (self.numeric_transformer, X.select_dtypes(exclude=['object']).columns),
+            (self.categorical_transformer, X.select_dtypes(include=['object']).columns))
 
-        # imputing
-        X = pd.DataFrame(self.imputer.fit_transform(X), columns=X.columns)
+        X = pd.DataFrame(self.data_transformer.fit_transform(X.copy()), columns=X.columns)
 
         # variance threshold
         X = self.variance_thr.fit_transform(X)
@@ -49,24 +55,19 @@ class DataPreprocessor:
         # normalization
         self.normalizer.fit(X)
 
-    def transform(self, x):
-        assert LABEL_COL in x.columns, f'label column "{LABEL_COL}" is not in dataframe, check dataframe format'
+    def transform(self, X_org, y_org):
+        X = X_org.copy()
+        y = y_org.copy()
 
         # handle missing labels
-        if self.y_nan_class is None:
-            x = x[~x[LABEL_COL].isna()]
-        else:
-            x[LABEL_COL].fillna(self.y_nan_class, inplace=True)
+        if self.ignore_nan_labels:
+            X, y = X[~y.isna()], y[~y.isna()]
+        y = self.le.transform(y)
 
-        X = x.drop(columns=[LABEL_COL])
-        y = x[LABEL_COL].astype(int)
+        X_index = X.index
 
-        # categorical encoding
-        for col in self.le.keys():
-            X[col] = self.le[col].transform(X[col].astype(str))
-
-        # features imputation
-        X = pd.DataFrame(self.imputer.transform(X), columns=X.columns)
+        # data transforming
+        X = pd.DataFrame(self.data_transformer.transform(X), columns=X.columns)
 
         # variance threshold
         X = self.variance_thr.transform(X)
@@ -74,7 +75,6 @@ class DataPreprocessor:
         # normalization
         X = self.normalizer.transform(X)
 
-        res = pd.DataFrame(X, columns=self.variance_thr.get_feature_names_out(), index=x.index)
-        res[LABEL_COL] = y
+        X = pd.DataFrame(X, columns=self.variance_thr.get_feature_names_out(), index=X_index)
 
-        return res
+        return X, y
