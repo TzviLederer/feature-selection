@@ -1,14 +1,16 @@
+import json
 import os
 import time
 from itertools import product
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from data_formatting import LABEL_COL
 from data_preprocessor import DataPreprocessor
-from experiments_settings import METRICS, DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS
-from utils import get_cv, calculate_metrics_scores
+from experiments_settings import METRICS_B, METRICS_M, DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS
+from utils import get_cv
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -26,7 +28,7 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
     features_selector = FEATURES_SELECTORS[filtering_algo]
     preprocessor = DataPreprocessor()
 
-    log_filename = f'{"_".join([estimator_name, Path(filename).name, filtering_algo, str(num_selected_features)])}.csv'
+    log_filename = f'{"_".join([estimator_name, Path(filename).name, filtering_algo, str(num_selected_features)])}.json'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -45,39 +47,49 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
         'n_features_org': df.shape[1]
     }
 
-    outputs = []
-    for i, (train_index, val_index) in enumerate(cv.split(df, df['y'])):
-        fs_fit_time, fit_time, metrics_scores, fs_out_scores = one_fold_pipe(df, estimator, features_selector,
-                                                                             num_selected_features, preprocessor,
-                                                                             train_index, val_index)
-        print(f'Fold {i}, fs_fit: {fs_fit_time} secs, fit: {fit_time} secs, Results:')
-        print(metrics_scores)
-        for metric, metric_val in metrics_scores.items():
-            outputs.append({'fit_time': fit_time,
-                            'fs_fit_time': fs_fit_time,
-                            'fold': i,
-                            'selected_features_names': list(fs_out_scores.keys()),
-                            'selected_features_scores': list(fs_out_scores.values()),
-                            'metric': metric,
-                            'metric_val': metric_val,
-                            **log_experiment_params})
-    pd.DataFrame(outputs).to_csv(log_filename)
+    # preprocessing
+    preprocessor.fit(df)
+    df = preprocessor.transform(df)
+    METRICS = METRICS_B if len(set(df[LABEL_COL])) == 2 else METRICS_M
+
+    # feature selection
+    fs_fit_time, k_best, fs_out_scores = get_k_best(df, features_selector, num_selected_features)
+
+    # evaluate results
+    fit_times, probas = fit_estimator(cv, df, estimator, k_best)
+    metrics = dict(map(lambda x: (x[0], x[1](df[LABEL_COL], probas)), METRICS.items()))
+    log_outputs = {'fit_time': np.array(fit_times).mean(),
+                   'fs_fit_time': fs_fit_time,
+                   'selected_features_names': k_best,
+                   'selected_features_scores': fs_out_scores,
+                   **log_experiment_params,
+                   **metrics}
+    with open(log_filename, 'w') as f:
+        json.dump(log_outputs, f)
+
     return log_filename
 
 
-def one_fold_pipe(df, estimator, features_selector, num_selected_features, preprocessor, train_index, val_index):
-    # split df
-    df_train = df.iloc[train_index]
-    df_val = df.iloc[val_index]
+def fit_estimator(cv, df, estimator, k_best):
+    probas = []
+    fit_times = []
+    predict_time = []
+    for train_index, val_index in cv.split(df, df['y']):
+        t0 = time.time()
+        estimator.fit(df.iloc[train_index][k_best], df.iloc[train_index][LABEL_COL])
+        fit_times.append(time.time() - t0)
 
-    # preprocessing
-    preprocessor.fit(df_train)
-    df_train = preprocessor.transform(df_train)
-    df_val = preprocessor.transform(df_val)
+        t0 = time.time()
+        probas.append(estimator.predict_proba(df.iloc[val_index][k_best]))
+        predict_time.append(time.time() - t0)
+    probas = np.concatenate(probas, axis=0)
+    return fit_times, probas
 
+
+def get_k_best(df, features_selector, num_selected_features):
     # feature selection fit
     fs_fit_start_time = time.time()
-    features_selector.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
+    features_selector.fit(df.drop(LABEL_COL, axis=1), df[LABEL_COL])
     fs_fit_time = time.time() - fs_fit_start_time
 
     # selected features scores
@@ -86,24 +98,7 @@ def one_fold_pipe(df, estimator, features_selector, num_selected_features, prepr
                      if k in out_fs}
     fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True)[:num_selected_features])
     k_best = list(fs_out_scores.keys())
-
-    # feature selection transform
-    values_train = features_selector.transform(df_train.drop(LABEL_COL, axis=1))
-    df_train = pd.DataFrame(values_train, columns=out_fs, index=df_train.index)[k_best]
-    df_train[LABEL_COL] = df.iloc[train_index][LABEL_COL]
-
-    values_val = features_selector.transform(df_val.drop(LABEL_COL, axis=1))
-    df_val = pd.DataFrame(values_val, columns=out_fs, index=df_val.index)[k_best]
-    df_val[LABEL_COL] = df.iloc[val_index][LABEL_COL]
-
-    # fit model
-    fit_start_time = time.time()
-    estimator.fit(df_train.drop(LABEL_COL, axis=1), df_train[LABEL_COL])
-    fit_time = time.time() - fit_start_time
-
-    # evaluate
-    metrics_scores = calculate_metrics_scores(estimator, df_val, METRICS)
-    return fs_fit_time, fit_time, metrics_scores, fs_out_scores
+    return fs_fit_time, k_best, fs_out_scores
 
 
 if __name__ == '__main__':

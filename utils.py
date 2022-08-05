@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.metrics import precision_recall_curve, auc, make_scorer
+from sklearn.model_selection import LeavePOut, LeaveOneOut, StratifiedKFold
 from sklearn.preprocessing import label_binarize
-from sklearn.model_selection import LeavePOut, LeaveOneOut, KFold, StratifiedKFold
 
 from data_formatting import LABEL_COL
 
