@@ -1,4 +1,3 @@
-mrmr_selection
 ReliefF
 numpy
 sklearn
