@@ -4,3 +4,4 @@ sklearn
 scikit-learn
 pandas
 scipy
+skfeature-chappers

@@ -2,14 +2,14 @@ from pathlib import Path
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_selection import SelectFdr
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import matthews_corrcoef, accuracy_score, roc_auc_score, make_scorer
+
+from feature_selectors import select_fdr_k, mrmr_k, rfe_svm_k, reliefF_k
 from utils import pr_auc
-from mrmr import mrmr_classif
 
 MODELS = {'nb': GaussianNB(),
           'svm': SVC(kernel='rbf'),
@@ -17,10 +17,10 @@ MODELS = {'nb': GaussianNB(),
           'rf': RandomForestClassifier(),
           'knn': KNeighborsClassifier()}
 
-FEATURES_SELECTORS = {'fdr': SelectFdr(alpha=0.1),
-                      'mrmr': lambda x: mrmr_classif(x_train, y_train, K=n-i, show_progress=False),
-                      'rfe_svm': '',
-                      'reliefF'}
+FEATURES_SELECTORS = {'fdr': select_fdr_k,
+                      'mrmr': mrmr_k,
+                      'rfe_svm': rfe_svm_k,
+                      'reliefF': reliefF_k}
 
 KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 

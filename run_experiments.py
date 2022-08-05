@@ -25,7 +25,7 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
     estimator = MODELS[estimator_name]
     df = pd.read_csv(filename)
     cv = get_cv(df)
-    features_selector = FEATURES_SELECTORS[filtering_algo]
+    features_selector = FEATURES_SELECTORS[filtering_algo](num_selected_features)
     preprocessor = DataPreprocessor()
 
     log_filename = f'{"_".join([estimator_name, Path(filename).name, filtering_algo, str(num_selected_features)])}.json'
@@ -56,9 +56,9 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
     fs_fit_time, k_best, fs_out_scores = get_k_best(df, features_selector, num_selected_features)
 
     # evaluate results
-    fit_times, probas = fit_estimator(cv, df, estimator, k_best)
-    metrics = dict(map(lambda x: (x[0], x[1](df[LABEL_COL], probas)), METRICS.items()))
-    log_outputs = {'fit_time': np.array(fit_times).mean(),
+    mean_fit_time, probas, mean_pred_time = fit_estimator(cv, df, estimator, k_best)
+    metrics = {metric: metric_func(df[LABEL_COL], probas) for metric, metric_func in METRICS.items()}
+    log_outputs = {'fit_time': mean_fit_time,
                    'fs_fit_time': fs_fit_time,
                    'selected_features_names': k_best,
                    'selected_features_scores': fs_out_scores,
@@ -73,7 +73,7 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
 def fit_estimator(cv, df, estimator, k_best):
     probas = []
     fit_times = []
-    predict_time = []
+    predict_time = .0
     for train_index, val_index in cv.split(df, df['y']):
         t0 = time.time()
         estimator.fit(df.iloc[train_index][k_best], df.iloc[train_index][LABEL_COL])
@@ -81,24 +81,25 @@ def fit_estimator(cv, df, estimator, k_best):
 
         t0 = time.time()
         probas.append(estimator.predict_proba(df.iloc[val_index][k_best]))
-        predict_time.append(time.time() - t0)
+        predict_time += (time.time() - t0)
+    mean_fit_time = np.array(fit_times).mean()
     probas = np.concatenate(probas, axis=0)
-    return fit_times, probas
+    mean_pred_time = predict_time / len(df)
+    return mean_fit_time, probas, mean_pred_time
 
 
-def get_k_best(df, features_selector, num_selected_features):
+def get_k_best(df, features_selector, k):
+    X, y = df.drop(LABEL_COL, axis=1), df[LABEL_COL]
     # feature selection fit
-    fs_fit_start_time = time.time()
-    features_selector.fit(df.drop(LABEL_COL, axis=1), df[LABEL_COL])
-    fs_fit_time = time.time() - fs_fit_start_time
+    start_time = time.time()
+    features_selector.fit(X, y)
+    fit_time = time.time() - start_time
 
     # selected features scores
-    out_fs = features_selector.get_feature_names_out()
-    fs_out_scores = {k: v for k, v in zip(features_selector.feature_names_in_, features_selector.scores_)
-                     if k in out_fs}
-    fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True)[:num_selected_features])
-    k_best = list(fs_out_scores.keys())
-    return fs_fit_time, k_best, fs_out_scores
+    fs_out = features_selector.get_feature_names_out()
+    out_scores = {f: s for f, s in zip(features_selector.feature_names_in_, features_selector.scores_) if k in fs_out}
+    k_best, k_best_scores = zip(*sorted(out_scores.items(), key=lambda item: item[1], reverse=True)[:k])
+    return fit_time, k_best, k_best_scores
 
 
 if __name__ == '__main__':
