@@ -5,25 +5,27 @@ from sklearn.svm import SVR
 from skfeature.function.similarity_based import reliefF
 
 
-def mrmr(k):
-    def mrmr_k(X, y):
-        best_k_idx, scores, _ = MRMR.mrmr(X.to_numpy(), y.to_numpy(), n_selected_features=k)
-        res = np.zeros_like(X.shape[1])
-        res[best_k_idx] = scores
-        return res
-
-    return SelectKBest(mrmr_k, k=k)
+def mrmr_fs(X, y):
+    best_k_idx, scores, _ = MRMR.mrmr(X, y, n_selected_features=100)
+    res = np.zeros_like(X.shape[1])
+    res[best_k_idx] = scores
+    return res
 
 
-def select_fdr_k(k): # need filter k?
-    return SelectFdr(alpha=0.1)
+def select_fdr_fs(X, y):
+    fs = SelectFdr(alpha=0.1)
+    fs.fit(X, y)
+    return fs.get_support().astype(int) * fs.scores_
 
 
-def rfe_svm_k(k):
-    return RFE(SVR(kernel='linear'), n_features_to_select=k)
+def rfe_svm_fs(X, y):
+    fs = RFE(SVR(kernel='linear', max_iter=100), n_features_to_select=100)
+    fs.fit(X, y)
+    return fs.get_support().astype(int)
 
 
-def reliefF_k(k):
-    def reliefF_raw(X, y):
-        return reliefF.reliefF(X, y, mode='raw')
-    return SelectKBest(reliefF_raw, k=k)
+def reliefF_fs(X, y):
+    return reliefF.reliefF(X, y, mode='raw')
+
+
+FEATURES_SELECTORS = [SelectKBest(fs) for fs in [mrmr_fs, select_fdr_fs, rfe_svm_fs, reliefF_fs]]

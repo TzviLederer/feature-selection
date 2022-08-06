@@ -4,4 +4,4 @@ sklearn
 scikit-learn
 pandas
 scipy
-skfeature-chappers
+git+https://github.com/jundongl/scikit-feature
