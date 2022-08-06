@@ -37,12 +37,12 @@ METRICS_M = {'roc_auc': make_scorer(roc_auc_score, average='weighted', multi_cla
              'pr_auc': make_scorer(pr_auc, needs_proba=True)}
 
 
-def get_cv(df):
-    if len(df) < 50:
+def get_cv(X):
+    if len(X) < 50:
         return LeavePOut(2)
-    elif 50 <= len(df) <= 100:
+    elif 50 <= len(X) <= 100:
         return LeaveOneOut()
-    elif 100 < len(df) < 1000:
+    elif 100 < len(X) < 1000:
         return StratifiedKFold(n_splits=10, random_state=42, shuffle=True)
     return StratifiedKFold(n_splits=5, random_state=42, shuffle=True)
 

@@ -1,17 +1,12 @@
-import json
 import os
-import time
 from itertools import product
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-
-import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator
 from sklearn.datasets import load_digits
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate, GridSearchCV
+from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
