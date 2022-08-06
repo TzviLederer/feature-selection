@@ -1,7 +1,7 @@
-mrmr_selection
 ReliefF
 numpy
 sklearn
 scikit-learn
 pandas
 scipy
+git+https://github.com/jundongl/scikit-feature

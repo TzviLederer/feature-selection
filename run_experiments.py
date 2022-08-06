@@ -1,16 +1,18 @@
-import json
 import os
-import time
 from itertools import product
 from pathlib import Path
-
-import numpy as np
+from shutil import rmtree
+from tempfile import mkdtemp
 import pandas as pd
+from sklearn.datasets import load_digits
+from sklearn.feature_selection import SelectKBest
+from sklearn.model_selection import cross_validate
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
-from data_preprocessor import DataPreprocessor
-from experiments_settings import METRICS_B, METRICS_M, DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS
-from utils import get_cv
+from data_preprocessor import build_data_preprocessor
+from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -21,14 +23,8 @@ def run_all(logs_dir='logs', overwrite_logs=False):
         print(f'Finished Experiment, Log file: {output_log_file}')
 
 
-def run_experiment(estimator_name, filename, filtering_algo, num_selected_features, logs_dir=None, overwrite_logs=True):
-    estimator = MODELS[estimator_name]
-    df = pd.read_csv(filename)
-    cv = get_cv(df)
-    features_selector = FEATURES_SELECTORS[filtering_algo]
-    preprocessor = DataPreprocessor()
-
-    log_filename = f'{"_".join([estimator_name, Path(filename).name, filtering_algo, str(num_selected_features)])}.json'
+def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrite_logs=True):
+    log_filename = f'{"_".join([estimator_name, Path(filename).name, fs_name, str(k)])}.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -37,69 +33,58 @@ def run_experiment(estimator_name, filename, filtering_algo, num_selected_featur
         print('Exists, skipping')
         return log_filename
 
-    log_experiment_params = {
-        'learning_algo': estimator_name,
+    df = pd.read_csv(filename)
+    cv = get_cv(df)
+    X = df.drop(columns=[LABEL_COL])
+    y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
+    X, y = load_digits(as_frame=True, return_X_y=True)
+
+    cachedir1, cachedir2 = mkdtemp(), mkdtemp()
+    pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
+                               ('feature_selector', SelectKBest(FEATURES_SELECTORS[fs_name], k=k)),
+                               ('classifier', MODELS[estimator_name])],
+                        memory=cachedir2)
+
+    results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True, verbose=2)
+
+    base_log = {
+        'learning_algorithm': estimator_name,
         'dataset': Path(filename).name,
-        'filtering_algo': filtering_algo,
-        'n_selected_features': num_selected_features,
+        'filtering_algorithm': fs_name,
+        'n_selected_features': k,
         'cv_method': str(cv),
         'n_samples': df.shape[0],
-        'n_features_org': df.shape[1]
+        'n_features_org': df.shape[1],
     }
-
-    # preprocessing
-    preprocessor.fit(df)
-    df = preprocessor.transform(df)
-    METRICS = METRICS_B if len(set(df[LABEL_COL])) == 2 else METRICS_M
-
-    # feature selection
-    fs_fit_time, k_best, fs_out_scores = get_k_best(df, features_selector, num_selected_features)
-
-    # evaluate results
-    fit_times, probas = fit_estimator(cv, df, estimator, k_best)
-    metrics = dict(map(lambda x: (x[0], x[1](df[LABEL_COL], probas)), METRICS.items()))
-    log_outputs = {'fit_time': np.array(fit_times).mean(),
-                   'fs_fit_time': fs_fit_time,
-                   'selected_features_names': k_best,
-                   'selected_features_scores': fs_out_scores,
-                   **log_experiment_params,
-                   **metrics}
     with open(log_filename, 'w') as f:
-        json.dump(log_outputs, f)
-
+        pd.DataFrame(build_cv_logs(results, base_log)).to_csv(f)
+    rmtree(cachedir1), rmtree(cachedir2)
     return log_filename
 
 
-def fit_estimator(cv, df, estimator, k_best):
-    probas = []
-    fit_times = []
-    predict_time = []
-    for train_index, val_index in cv.split(df, df['y']):
-        t0 = time.time()
-        estimator.fit(df.iloc[train_index][k_best], df.iloc[train_index][LABEL_COL])
-        fit_times.append(time.time() - t0)
-
-        t0 = time.time()
-        probas.append(estimator.predict_proba(df.iloc[val_index][k_best]))
-        predict_time.append(time.time() - t0)
-    probas = np.concatenate(probas, axis=0)
-    return fit_times, probas
+def build_cv_logs(results, base_log):
+    logs = []
+    for i in range(len(results['estimator'])):
+        k_best, k_best_scores = extract_selected_features(results['estimator'][i])
+        logs.append({
+            **base_log,
+            'fold': i + 1,
+            'selected_features_names': ','.join([str(x) for x in k_best]),
+            'selected_features_scores': ','.join(['%.4f' % x for x in k_best_scores]),
+            **{k: '%.4f' % v[i] for k, v in results.items() if k != 'estimator'},
+        })
+    return logs
 
 
-def get_k_best(df, features_selector, num_selected_features):
-    # feature selection fit
-    fs_fit_start_time = time.time()
-    features_selector.fit(df.drop(LABEL_COL, axis=1), df[LABEL_COL])
-    fs_fit_time = time.time() - fs_fit_start_time
-
-    # selected features scores
-    out_fs = features_selector.get_feature_names_out()
-    fs_out_scores = {k: v for k, v in zip(features_selector.feature_names_in_, features_selector.scores_)
-                     if k in out_fs}
-    fs_out_scores = dict(sorted(fs_out_scores.items(), key=lambda item: item[1], reverse=True)[:num_selected_features])
-    k_best = list(fs_out_scores.keys())
-    return fs_fit_time, k_best, fs_out_scores
+def extract_selected_features(estimator):
+    fs_input_features = estimator['preprocessing'].get_feature_names_out()
+    fs_scores = estimator['feature_selector'].scores_
+    clf_input_features = estimator[:-1].get_feature_names_out()
+    out_scores = {f: s for f, s in zip(fs_input_features, fs_scores) if f in clf_input_features}
+    k_best, k_best_scores = zip(*sorted(out_scores.items(), key=lambda item: item[1], reverse=True))
+    return k_best, k_best_scores
 
 
 if __name__ == '__main__':
-    run_all()
+    # run_all()
+    run_experiment('nb', 'data\\preprocessed\\arcene.csv', 'fdr', 1)
