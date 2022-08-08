@@ -7,13 +7,14 @@ from tempfile import mkdtemp
 
 import pandas as pd
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate, StratifiedKFold
+from sklearn.model_selection import cross_validate, StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from data_preprocessor import build_data_preprocessor
-from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS
+from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS, \
+    get_scores_for_loo
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -54,9 +55,6 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
                                ('classifier', MODELS[estimator_name])],
                         memory=cachedir2)
 
-    results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True, verbose=2,
-                             n_jobs=N_JOBS)
-
     base_log = {
         'learning_algorithm': estimator_name,
         'dataset': Path(filename).name,
@@ -66,10 +64,50 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
         'n_samples': df.shape[0],
         'n_features_org': df.shape[1],
     }
-    with open(log_filename, 'w') as f:
-        pd.DataFrame(build_cv_logs(results, base_log)).to_csv(f)
+
+    # If the cross validation is not leave one out or leave two out, we compute the results per fold
+    if isinstance(cv, StratifiedKFold):
+        results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True,
+                                 verbose=2, n_jobs=N_JOBS)
+        pd.DataFrame(build_cv_logs(results, base_log)).to_csv(log_filename)
+
+    else:
+        # preprocess for feature selection
+        X, selected_features_names, selected_features_scores = select_features(pipeline, X, y)
+
+        # model pipeline
+        results = fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2)
+        results.update({'selected_features_names': list(selected_features_names),
+                        'selected_features_scores': selected_features_scores,
+                        'fold': None})
+        base_log.update(results)
+        pd.DataFrame([base_log]).to_csv(log_filename)
+
     rmtree(cachedir1), rmtree(cachedir2)
     return log_filename
+
+
+def fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2):
+    pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
+                               ('classifier', MODELS[estimator_name])],
+                        memory=cachedir2)
+    outputs = cross_val_predict(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS, method='predict_proba')
+    return {k: scoring(y, outputs) for k, scoring in get_scores_for_loo(y).items()}
+
+
+def select_features(pipeline, X, y):
+    preprocessing = pipeline.steps[0][1]
+    feature_selector = pipeline.steps[1][1]
+
+    # apply feature selection
+    X_pp = pd.DataFrame(preprocessing.fit_transform(X, y), index=X.index, columns=X.columns)
+    feature_selector.fit(X_pp, y)
+    selected_features_names = feature_selector.get_feature_names_out()
+    indexes = list(map(lambda x: X.columns.to_list().index(x), selected_features_names))
+    selected_features_scores = list(map(lambda x: feature_selector.scores_[x], indexes))
+
+    X = pd.DataFrame(feature_selector.transform(X), columns=selected_features_names, index=X.index)
+    return X, selected_features_names, selected_features_scores
 
 
 def drop_rare_labels(cv, df):
@@ -105,4 +143,4 @@ def extract_selected_features(estimator):
 
 if __name__ == '__main__':
     run_all()
-    # run_experiment('svm', 'data/preprocessed/CS.csv', 'reliefF', 1)
+    # run_experiment('svm', 'data/preprocessed/ALLAML.csv', 'reliefF', 1)

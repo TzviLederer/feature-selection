@@ -2,7 +2,7 @@ from pathlib import Path
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import matthews_corrcoef, roc_auc_score, make_scorer
+from sklearn.metrics import matthews_corrcoef, roc_auc_score, make_scorer, accuracy_score
 from sklearn.model_selection import StratifiedKFold, LeaveOneOut, LeavePOut
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
@@ -37,6 +37,15 @@ METRICS_M = {'roc_auc': make_scorer(roc_auc_score, average='weighted', multi_cla
              'mcc': make_scorer(matthews_corrcoef),
              'pr_auc': make_scorer(pr_auc, needs_proba=True)}
 
+# Scores for leave-one-out or leave-two-out
+SCORES_B = {'roc_auc': lambda y_true, y_score: roc_auc_score(y_true, y_score[:, 1]),
+            'acc': lambda y_true, y_score: accuracy_score(y_true, y_score.argmax(axis=1)),
+            'mcc': lambda y_true, y_score: matthews_corrcoef(y_true, y_score.argmax(axis=1)),
+            'pr_auc': lambda y_true, y_score: pr_auc(y_true, y_score[:, 1])
+            }
+
+SCORES_M = {}
+
 N_JOBS = -1
 
 
@@ -52,3 +61,7 @@ def get_cv(X):
 
 def get_scoring_metrics(y):
     return METRICS_B if len(y.unique()) == 2 else METRICS_M
+
+
+def get_scores_for_loo(y):
+    return SCORES_B if len(y.unique()) == 2 else SCORES_M
