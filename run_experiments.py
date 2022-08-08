@@ -3,6 +3,7 @@ from itertools import product
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+
 import pandas as pd
 from sklearn.datasets import load_digits
 from sklearn.feature_selection import SelectKBest
@@ -37,7 +38,6 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
     cv = get_cv(df)
     X = df.drop(columns=[LABEL_COL])
     y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
-    X, y = load_digits(as_frame=True, return_X_y=True)
 
     cachedir1, cachedir2 = mkdtemp(), mkdtemp()
     pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
@@ -86,5 +86,5 @@ def extract_selected_features(estimator):
 
 
 if __name__ == '__main__':
-    # run_all()
-    run_experiment('nb', 'data\\preprocessed\\arcene.csv', 'fdr', 1)
+    run_all()
+    # run_experiment('nb', 'data\\preprocessed\\arcene.csv', 'fdr', 1)
