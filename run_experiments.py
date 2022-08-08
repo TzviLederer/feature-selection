@@ -13,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from data_preprocessor import build_data_preprocessor
-from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS
+from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS, CACHEDIR
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -48,7 +48,7 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
     X = df.drop(columns=[LABEL_COL])
     y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
 
-    cachedir1, cachedir2 = mkdtemp(), mkdtemp()
+    cachedir1, cachedir2 = mkdtemp(dir=CACHEDIR), mkdtemp(dir=CACHEDIR)
     pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
                                ('feature_selector', SelectKBest(FEATURES_SELECTORS[fs_name], k=k)),
                                ('classifier', MODELS[estimator_name])],
@@ -104,5 +104,5 @@ def extract_selected_features(estimator):
 
 
 if __name__ == '__main__':
-    run_all()
-    # run_experiment('nb', 'data\\preprocessed\\arcene.csv', 'fdr', 1)
+    # run_all()
+    run_experiment('svm', 'data/preprocessed/CS.csv', 'reliefF', 1)

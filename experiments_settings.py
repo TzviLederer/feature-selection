@@ -39,6 +39,9 @@ METRICS_M = {'roc_auc': make_scorer(roc_auc_score, average='weighted', multi_cla
 
 N_JOBS = -1
 
+CACHEDIR = 'cachedir'
+Path(CACHEDIR).mkdir(exist_ok=True)
+
 
 def get_cv(X):
     if len(X) < 50:
