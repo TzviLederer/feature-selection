@@ -106,10 +106,10 @@ def select_features(pipeline, X, y):
     feature_selector = pipeline.steps[1][1]
 
     # apply feature selection
-    X_pp = pd.DataFrame(preprocessing.fit_transform(X, y), index=X.index, columns=X.columns)
+    X_pp = pd.DataFrame(preprocessing.fit_transform(X, y), columns=preprocessing.get_feature_names_out())
     feature_selector.fit(X_pp, y)
     selected_features_names = feature_selector.get_feature_names_out()
-    indexes = list(map(lambda x: X.columns.to_list().index(x), selected_features_names))
+    indexes = list(map(lambda x: feature_selector.feature_names_in_.tolist().index(x), selected_features_names))
     selected_features_scores = list(map(lambda x: feature_selector.scores_[x], indexes))
 
     # X = pd.DataFrame(feature_selector.transform(X_pp), columns=selected_features_names, index=X.index)
@@ -149,4 +149,4 @@ def extract_selected_features(estimator):
 
 if __name__ == '__main__':
     # run_all()
-    run_experiment('nb', 'data/preprocessed/Lymphoma.csv', 'rfe_svm', 1, logs_dir='logs')
+    run_experiment('nb', 'data/preprocessed/FSH.csv', 'rfe_svm', 1, logs_dir='logs')
