@@ -12,7 +12,7 @@ from feature_selectors import select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs
 from pr_auc import pr_auc
 
 MODELS = {'nb': GaussianNB(),
-          'svm': SVC(kernel='rbf'),
+          'svm': SVC(kernel='rbf', probability=True),
           'lr': LogisticRegression(max_iter=10_000),
           'rf': RandomForestClassifier(),
           'knn': KNeighborsClassifier()}
