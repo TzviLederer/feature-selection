@@ -91,8 +91,14 @@ def fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2):
     pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
                                ('classifier', MODELS[estimator_name])],
                         memory=cachedir2)
+
+    # calculate times
+    outputs = cross_validate(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS)
+    times = dict(map(lambda x: (x[0], x[1].mean()), outputs.items()))
+
     outputs = cross_val_predict(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS, method='predict_proba')
-    return {k: scoring(y, outputs) for k, scoring in get_scores_for_loo(y).items()}
+    times.update({f'test_{k}': scoring(y, outputs) for k, scoring in get_scores_for_loo(y).items()})
+    return times
 
 
 def select_features(pipeline, X, y):
@@ -143,4 +149,4 @@ def extract_selected_features(estimator):
 
 if __name__ == '__main__':
     run_all()
-    # run_experiment('svm', 'data/preprocessed/ALLAML.csv', 'reliefF', 1)
+    # run_experiment('svm', 'data/preprocessed/ALLAML.csv', 'reliefF', 1, logs_dir='logs')
