@@ -1,11 +1,11 @@
 import os
+import sys
 from itertools import product
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 
 import pandas as pd
-from sklearn.datasets import load_digits
 from sklearn.feature_selection import SelectKBest
 from sklearn.model_selection import cross_validate
 from sklearn.pipeline import Pipeline
@@ -13,12 +13,17 @@ from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from data_preprocessor import build_data_preprocessor
-from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics
+from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
-    for experiment_args in product(MODELS.keys(), DATASETS_FILES, FEATURES_SELECTORS.keys(), KS):
+    if len(sys.argv) == 1:
+        datasets_files = DATASETS_FILES
+    else:
+        datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
+
+    for experiment_args in product(MODELS.keys(), datasets_files, FEATURES_SELECTORS.keys(), KS):
         print(f'Start Experiment, Settings: {experiment_args}')
         output_log_file = run_experiment(*experiment_args, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
         print(f'Finished Experiment, Log file: {output_log_file}')
@@ -45,7 +50,8 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
                                ('classifier', MODELS[estimator_name])],
                         memory=cachedir2)
 
-    results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True, verbose=2)
+    results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True, verbose=2,
+                             n_jobs=N_JOBS)
 
     base_log = {
         'learning_algorithm': estimator_name,

@@ -1,11 +1,12 @@
 from pathlib import Path
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import matthews_corrcoef, roc_auc_score, make_scorer
 from sklearn.model_selection import StratifiedKFold, LeaveOneOut, LeavePOut
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.metrics import matthews_corrcoef, roc_auc_score, make_scorer
 
 from feature_selectors import select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs
 from pr_auc import pr_auc
@@ -35,6 +36,8 @@ METRICS_M = {'roc_auc': make_scorer(roc_auc_score, average='weighted', multi_cla
              'acc': 'accuracy',
              'mcc': make_scorer(matthews_corrcoef),
              'pr_auc': make_scorer(pr_auc, needs_proba=True)}
+
+N_JOBS = -1
 
 
 def get_cv(X):
