@@ -7,7 +7,7 @@ from skfeature.function.similarity_based import reliefF
 
 def mrmr_fs(X, y):
     best_k_idx, scores, _ = MRMR.mrmr(X, y, n_selected_features=100)
-    res = np.zeros_like(X.shape[1])
+    res = np.zeros(X.shape[1])
     res[best_k_idx] = scores
     return res
 
