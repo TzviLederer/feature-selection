@@ -7,7 +7,7 @@ from tempfile import mkdtemp
 
 import pandas as pd
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate
+from sklearn.model_selection import cross_validate, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
@@ -41,6 +41,10 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
 
     df = pd.read_csv(filename)
     cv = get_cv(df)
+
+    # check if the number of sample in each class is less than fold number
+    df = drop_rare_labels(cv, df)
+
     X = df.drop(columns=[LABEL_COL])
     y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
 
@@ -66,6 +70,14 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
         pd.DataFrame(build_cv_logs(results, base_log)).to_csv(f)
     rmtree(cachedir1), rmtree(cachedir2)
     return log_filename
+
+
+def drop_rare_labels(cv, df):
+    if isinstance(cv, StratifiedKFold):
+        classes = df[LABEL_COL].value_counts() > cv.n_splits
+        classes = classes[classes].index.to_list()
+        df = df[df[LABEL_COL].apply(lambda x: x in classes)]
+    return df
 
 
 def build_cv_logs(results, base_log):
