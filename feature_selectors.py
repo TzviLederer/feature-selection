@@ -19,7 +19,7 @@ def select_fdr_fs(X, y):
 
 
 def rfe_svm_fs(X, y):
-    fs = RFE(SVR(kernel='linear', max_iter=10_000), n_features_to_select=100)
+    fs = RFE(SVR(kernel='linear', max_iter=100_000), n_features_to_select=100)
     fs.fit(X, y)
     return fs.get_support().astype(int)
 
