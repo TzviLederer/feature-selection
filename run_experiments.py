@@ -1,20 +1,22 @@
 import os
 import sys
+from collections import defaultdict
 from itertools import product
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 
+import numpy as np
 import pandas as pd
 from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate, StratifiedKFold, cross_val_predict
+from sklearn.model_selection import cross_validate, StratifiedKFold, cross_val_predict, LeaveOneOut, LeavePOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from data_preprocessor import build_data_preprocessor
 from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS, \
-    get_scores_for_loo
+    get_scores_for_loo, OVERRIDE_LOGS
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -96,9 +98,28 @@ def fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2):
     outputs = cross_validate(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS)
     times = dict(map(lambda x: (x[0], x[1].mean()), outputs.items()))
 
-    outputs = cross_val_predict(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS, method='predict_proba')
+    if isinstance(cv, LeaveOneOut):
+        outputs = cross_val_predict(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS, method='predict_proba')
+    elif isinstance(cv, LeavePOut):
+        outputs = cross_val_predict_lpo(pipeline, X, y, cv)
+    else:
+        raise NotImplementedError('Implemented only for LeaveOneOut or LeavePOut')
     times.update({f'test_{k}': scoring(y, outputs) for k, scoring in get_scores_for_loo(y).items()})
     return times
+
+
+def cross_val_predict_lpo(pipeline, X, y, cv):
+    outputs = defaultdict(list)
+    for train_ind, val_ind in cv.split(X=X, y=y):
+        x_train, x_val = X.iloc[train_ind], X.iloc[val_ind]
+        y_train, y_val = y.iloc[train_ind], y.iloc[val_ind]
+        pipeline.fit(x_train, y_train)
+        preds = pipeline.predict_proba(x_val)
+        for i, p in zip(val_ind, preds):
+            outputs[i].append(p)
+    outputs = {k: np.stack(v).mean(axis=0) for k, v in outputs.items()}
+    outputs = pd.DataFrame(outputs).T.loc[y.index].values
+    return outputs
 
 
 def select_features(pipeline, X, y):
@@ -148,6 +169,5 @@ def extract_selected_features(estimator):
 
 
 if __name__ == '__main__':
-    run_all()
-    # run_experiment('nb', 'data/preprocessed/FSH.csv', 'rfe_svm', 1, logs_dir='logs')
-
+    run_all(overwrite_logs=OVERRIDE_LOGS)
+    # run_experiment('nb', 'data/preprocessed/bladderbatch.csv', 'mrmr', 1, logs_dir='logs')

@@ -25,6 +25,7 @@ FEATURES_SELECTORS = {'fdr': select_fdr_fs,
 KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 
 DATASETS_FILES = list(map(str, Path('data/preprocessed').glob('*.csv')))
+OVERRIDE_LOGS = True
 
 # binary and multiclass metrics
 METRICS_B = {'roc_auc': 'roc_auc',
@@ -44,7 +45,10 @@ SCORES_B = {'roc_auc': lambda y_true, y_score: roc_auc_score(y_true, y_score[:, 
             'pr_auc': lambda y_true, y_score: pr_auc(y_true, y_score[:, 1])
             }
 
-SCORES_M = {}
+SCORES_M = {'roc_auc': lambda y_true, y_proba: roc_auc_score(y_true, y_proba, average='weighted', multi_class='ovr'),
+            'acc': lambda y_true, y_proba: accuracy_score(y_true, y_proba.argmax(axis=1)),
+            'mcc': lambda y_true, y_proba: matthews_corrcoef(y_true, y_proba.argmax(axis=1)),
+            'pr_auc': lambda y_true, y_proba: pr_auc(y_true, y_proba)}
 
 N_JOBS = -1
 
