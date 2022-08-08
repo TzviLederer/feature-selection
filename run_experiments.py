@@ -112,8 +112,8 @@ def select_features(pipeline, X, y):
     indexes = list(map(lambda x: X.columns.to_list().index(x), selected_features_names))
     selected_features_scores = list(map(lambda x: feature_selector.scores_[x], indexes))
 
-    X = pd.DataFrame(feature_selector.transform(X), columns=selected_features_names, index=X.index)
-    return X, selected_features_names, selected_features_scores
+    # X = pd.DataFrame(feature_selector.transform(X_pp), columns=selected_features_names, index=X.index)
+    return X[selected_features_names], selected_features_names, selected_features_scores
 
 
 def drop_rare_labels(cv, df):
@@ -148,5 +148,5 @@ def extract_selected_features(estimator):
 
 
 if __name__ == '__main__':
-    run_all()
-    # run_experiment('svm', 'data/preprocessed/ALLAML.csv', 'reliefF', 1, logs_dir='logs')
+    # run_all()
+    run_experiment('nb', 'data/preprocessed/Lymphoma.csv', 'rfe_svm', 1, logs_dir='logs')
