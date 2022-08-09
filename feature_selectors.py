@@ -1,8 +1,8 @@
 import numpy as np
 from skfeature.function.information_theoretical_based import MRMR
-from sklearn.feature_selection import SelectFdr, RFE, SelectKBest
-from sklearn.svm import SVR
 from skfeature.function.similarity_based import reliefF
+from sklearn.feature_selection import SelectFdr, RFE
+from sklearn.svm import SVR, SVC
 
 
 def mrmr_fs(X, y):
@@ -28,4 +28,37 @@ def reliefF_fs(X, y):
     return reliefF.reliefF(X, y, mode='raw')
 
 
-FEATURES_SELECTORS = [SelectKBest(fs) for fs in [mrmr_fs, select_fdr_fs, rfe_svm_fs, reliefF_fs]]
+def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
+    X = np.array(X)
+    y = np.array(y)
+
+    svm = SVC(kernel=kernel, max_iter=svm_max_iter)
+
+    X_0 = X.copy()
+    s = list(range(X.shape[1]))
+    r = []
+
+    while s:
+        if verbose > 0:
+            print('\r  ', end='')
+            print(f'\r{len(s)}', end='')
+
+        svm.fit(X_0[:, s], y)
+
+        alphas = np.zeros(len(X))
+        alphas[svm.support_] = svm.dual_coef_.mean(axis=0)
+        w = alphas @ X_0[:, s]
+        c = w ** 2
+
+        f = np.argmin(c)
+        r.append(s[f])
+        s.remove(s[f])
+
+    r = np.array(r)[::-1]
+
+    # make scores
+    t = np.array(list(dict(sorted(enumerate(r), key=lambda x: x[1])).keys()))
+    return 1 - t / max(t)
+
+# FEATURES_SELECTORS = [SelectKBest(fs) for fs in [mrmr_fs, select_fdr_fs, rfe_svm_fs, reliefF_fs]]
+# FEATURES_SELECTORS = [SelectKBest(fs) for fs in [svm_fs]]
