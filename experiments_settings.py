@@ -8,7 +8,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 
-from feature_selectors import select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs, svm_fs
+from feature_selectors_baselines import select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs
+from svm_fs import svm_fs, svm_fs_frac_steps
 from pr_auc import pr_auc
 
 MODELS = {'nb': GaussianNB(),
@@ -21,7 +22,8 @@ FEATURES_SELECTORS = {'fdr': select_fdr_fs,
                       'mrmr': mrmr_fs,
                       'rfe_svm': rfe_svm_fs,
                       'reliefF': reliefF_fs,
-                      'svm_ours': svm_fs}
+                      'svm_ours': svm_fs,
+                      'svm_improved': svm_fs_frac_steps}
 
 KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 
