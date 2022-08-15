@@ -4,4 +4,6 @@ sklearn
 scikit-learn
 pandas
 scipy
+scikit-posthocs
+seaborn
 git+https://github.com/jundongl/scikit-feature
