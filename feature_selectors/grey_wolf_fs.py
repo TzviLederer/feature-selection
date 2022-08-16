@@ -92,7 +92,7 @@ def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutat
     return min_fitness_x_alpha
 
 
-def grey_wolf_n_layered_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5, n_layers=5):
+def grey_wolf_fs_New(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5, n_layers=5):
     wolfs = (np.random.rand(n_agents, len(X.columns)) > .5).astype(float)
     n = len(X.columns)
 

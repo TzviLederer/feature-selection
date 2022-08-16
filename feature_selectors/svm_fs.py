@@ -35,7 +35,7 @@ def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
     return 1 - t / max(t)
 
 
-def svm_fs_frac_steps(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_frac=0.1):
+def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_frac=0.1):
     X = np.array(X)
     y = np.array(y)
 

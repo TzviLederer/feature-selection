@@ -2,7 +2,7 @@ import numpy as np
 from skfeature.function.information_theoretical_based import MRMR
 from skfeature.function.similarity_based import reliefF
 from sklearn.feature_selection import SelectFdr, RFE
-from sklearn.svm import SVR, SVC
+from sklearn.svm import SVR
 
 
 def mrmr_fs(X, y):
@@ -26,6 +26,3 @@ def rfe_svm_fs(X, y):
 
 def reliefF_fs(X, y):
     return reliefF.reliefF(X, y, mode='raw')
-
-# FEATURES_SELECTORS = [SelectKBest(fs) for fs in [mrmr_fs, select_fdr_fs, rfe_svm_fs, reliefF_fs]]
-# FEATURES_SELECTORS = [SelectKBest(fs) for fs in [svm_fs]]
