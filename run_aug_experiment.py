@@ -18,7 +18,7 @@ from data_preprocessor import build_data_preprocessor
 from imblearn.over_sampling import BorderlineSMOTE  # choose the least common samples to duplicate (could perform better
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
-from run_experiments import build_log_dataframe, get_dataset_and_experiment_params,
+from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):

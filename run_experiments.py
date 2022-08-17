@@ -93,7 +93,6 @@ def build_log_dataframe(gcv, base_details):
             to_log.append({**fold_res,
                            **base_details,
                            'learning_algorithm': experiment['clf'].clf_name_,
-                           'learning_algorithm_params': json.dumps(experiment['clf'].get_params(), skipkeys=True),
                            'filtering_algorithm': experiment['fs'].score_func.__name__,
                            'n_selected_features': experiment['fs__k'],
                            'selected_features_names': ','.join([str(x) for x in sf.keys()]),
@@ -104,4 +103,4 @@ def build_log_dataframe(gcv, base_details):
 
 if __name__ == '__main__':
     # run_all(overwrite_logs=OVERRIDE_LOGS)
-    run_experiment('data/preprocessed/ALLAML.csv', logs_dir='logs')
+    run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='logs')

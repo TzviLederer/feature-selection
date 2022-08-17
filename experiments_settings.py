@@ -1,6 +1,4 @@
 from pathlib import Path
-from sklearn.model_selection import StratifiedKFold, LeaveOneOut, LeavePOut
-
 from feature_selectors import *
 from wrapped_estimators import *
 
