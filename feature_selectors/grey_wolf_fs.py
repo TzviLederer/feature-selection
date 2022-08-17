@@ -55,7 +55,7 @@ def calculate_fitnesses(X, y, wolfs, alpha, two_phase_mutation_prob=None):
     return fitnesses
 
 
-def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5):
+def grey_wolf_fs(X, y, n_agents=5, iterations=30, alpha=0.001, two_phase_mutation_prob=0.5):
     n = X.shape[1]
     wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
@@ -70,13 +70,12 @@ def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutat
         x_abd = np.stack([x_alpha, x_beta, x_delta]).copy()
 
         a = 2 - t * 2 / iterations
-        A = 2 * a * np.random.rand(3, n)
+        A = np.abs(2 * a * np.random.rand(3, n) - a)
         C = 2 * np.random.rand(3, n)
 
         for wolf_ind in sorted_index:
             wolf = wolfs[wolf_ind]
-            D = C * x_abd - wolf
-
+            D = np.abs(C * x_abd - wolf)
             X_123 = x_abd - A * D
             wolfs[wolf_ind] = X_123.mean(axis=0)
 
@@ -95,7 +94,7 @@ def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutat
     return min_fitness_x_alpha
 
 
-def grey_wolf_fs_New(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5, n_layers=5):
+def grey_wolf_fs_New(X, y, n_agents=5, iterations=30, alpha=0.001, two_phase_mutation_prob=0.5, n_layers=5):
     n = X.shape[1]
     wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
@@ -110,12 +109,12 @@ def grey_wolf_fs_New(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_m
         x_abd = np.stack(x_bests_wolves).copy()
 
         a = 2 - t * 2 / iterations
-        A = 2 * a * np.random.rand(n_layers, n)
+        A = np.abs(2 * a * np.random.rand(n_layers, n) - a)
         C = 2 * np.random.rand(n_layers, n)
 
         for wolf_ind in sorted_index:
             wolf = wolfs[wolf_ind]
-            D = C * x_abd - wolf
+            D = np.abs(C * x_abd - wolf)
             X_123 = x_abd - A * D
             wolfs[wolf_ind] = X_123.mean(axis=0)
 
