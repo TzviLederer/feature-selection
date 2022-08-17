@@ -79,8 +79,8 @@ def run_experiment(filename, results_file_name, logs_dir=None, overwrite_logs=Tr
 def extract_best_settings_from_results(results_file_name, dataset_name):
     df = pd.read_csv(results_file_name)
     df = df[(df['dataset'] == dataset_name)]
-    gc = df.groupby(['learning_algorithm', 'filtering_algorithm', 'n_selected_features']).mean('roc_auc').reset_index()
-    best_settings = gc.iloc[gc['roc_auc'].argmax()]['learning_algorithm', 'filtering_algorithm', 'n_selected_features']
+    gc = df.groupby(['learning_algorithm', 'filtering_algorithm', 'n_selected_features']).mean('test_roc_auc').reset_index()
+    best_settings = gc.iloc[gc['test_roc_auc'].argmax()]['learning_algorithm', 'filtering_algorithm', 'n_selected_features']
     fs = next((x for x in WRAPPED_FEATURES_SELECTORS if x.score_func.__name__ == best_settings['filtering_algorithm']))
     clf = next((x for x in WRAPPED_MODELS if fs.clf_name_ == best_settings['learning_algorithm']))
     k = best_settings['n_selected_features']
