@@ -1,7 +1,5 @@
-ReliefF
 numpy
 sklearn
-scikit-learn
 imblearn
 pandas
 scipy
