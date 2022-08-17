@@ -3,7 +3,7 @@ from collections import defaultdict
 from sklearn.base import clone
 
 import numpy as np
-from sklearn.model_selection import LeaveOneOut, LeavePOut
+from sklearn.model_selection import LeaveOneOut, LeavePOut, StratifiedKFold
 
 from scoring_handlers import calculate_metrics
 
