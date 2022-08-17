@@ -4,12 +4,11 @@ from sklearn.model_selection import StratifiedKFold, LeaveOneOut, LeavePOut
 from feature_selectors import *
 from wrapped_estimators import *
 
-
 WRAPPED_MODELS = [WrappedGaussianNB(),
-                      WrappedRandomForestClassifier(),
-                      WrappedKNeighborsClassifier(),
-                      WrappedLogisticRegression(max_iter=10_000),
-                      WrappedSVC(kernel='rbf', probability=True)]
+                  WrappedRandomForestClassifier(),
+                  WrappedKNeighborsClassifier(),
+                  WrappedLogisticRegression(max_iter=10_000),
+                  WrappedSVC(kernel='rbf', probability=True)]
 
 FEATURES_SELECTORS = [select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs,
                       svm_fs, svm_fs_New,
@@ -22,13 +21,3 @@ DATASETS_FILES = list(map(str, Path('data/preprocessed').glob('*.csv')))
 OVERRIDE_LOGS = True
 
 N_JOBS = -1
-
-
-def get_cv(X):
-    if len(X) < 50:
-        return LeavePOut(2)
-    elif 50 <= len(X) <= 100:
-        return LeaveOneOut()
-    elif 100 < len(X) < 1000:
-        return StratifiedKFold(n_splits=10, random_state=42, shuffle=True)
-    return StratifiedKFold(n_splits=5, random_state=42, shuffle=True)

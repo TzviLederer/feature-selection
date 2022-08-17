@@ -11,12 +11,13 @@ from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from disable_cv import DisabledCV
-from experiments_settings import DATASETS_FILES, KS, get_cv, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, \
+from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, \
     WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
 from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
 from scoring_handlers import get_scoring
+from wrapped_estimators.utils import get_cv
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):

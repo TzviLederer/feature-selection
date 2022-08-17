@@ -1,6 +1,9 @@
 import numpy as np
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import KFold, cross_val_score
+import warnings
+from tqdm.auto import tqdm
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def calculate_error_rate(X, y, kf_n_splits=10, knn_n_neighbors=5):
@@ -11,7 +14,7 @@ def calculate_error_rate(X, y, kf_n_splits=10, knn_n_neighbors=5):
 
 
 def one_wolf_fitness(X, y, wolf, alpha):
-    error_rate = calculate_error_rate(X.iloc[:, wolf], y)
+    error_rate = calculate_error_rate(X[:, wolf.astype(bool)], y)
     return alpha * error_rate + (1 - alpha) * wolf.mean()
 
 
@@ -53,8 +56,8 @@ def calculate_fitnesses(X, y, wolfs, alpha, two_phase_mutation_prob=None):
 
 
 def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5):
-    wolfs = (np.random.rand(n_agents, len(X.columns)) > .5).astype(float)
-    n = len(X.columns)
+    n = X.shape[1]
+    wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
     fitnesses = calculate_fitnesses(X, y, wolfs, alpha)
     sorted_index = np.argsort(fitnesses)
@@ -63,7 +66,7 @@ def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutat
     min_fitness = 1
     min_fitness_x_alpha = -1
 
-    for t in range(iterations):
+    for t in tqdm(range(iterations)):
         x_abd = np.stack([x_alpha, x_beta, x_delta]).copy()
 
         a = 2 - t * 2 / iterations
@@ -93,8 +96,8 @@ def grey_wolf_fs(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutat
 
 
 def grey_wolf_fs_New(X, y, n_agents=10, iterations=100, alpha=0.999, two_phase_mutation_prob=0.5, n_layers=5):
-    wolfs = (np.random.rand(n_agents, len(X.columns)) > .5).astype(float)
-    n = len(X.columns)
+    n = X.shape[1]
+    wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
     fitnesses = calculate_fitnesses(X, y, wolfs, alpha)
     sorted_index = np.argsort(fitnesses)
