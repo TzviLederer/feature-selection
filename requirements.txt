@@ -2,6 +2,7 @@ ReliefF
 numpy
 sklearn
 scikit-learn
+imblearn
 pandas
 scipy
 scikit-posthocs

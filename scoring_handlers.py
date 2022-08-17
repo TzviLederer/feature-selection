@@ -14,13 +14,9 @@ def get_scoring(cv, y):
 
 
 def _scoring_lo(estimator, X, y_true):
-    start = time.time()
-    estimator.predict_proba(X)
-    pred_time = time.time() - start
     return {
         'classifier_fit_time': estimator['clf'].fit_time,
         'feature_selector_fit_time': estimator['fs'].fit_time,
-        'mean_inference_time': pred_time / X.shape[0],
         **extract_selected_features(estimator),
         **estimator['clf'].metrics
     }
@@ -34,7 +30,7 @@ def _scoring_skf(estimator, X, y_true, multi=False):
         'classifier_fit_time': estimator['clf'].fit_time,
         'feature_selector_fit_time': estimator['fs'].fit_time,
         'mean_inference_time': pred_time / X.shape[0],
-        **extract_selected_features(estimator),
+        **extract_selected_features(estimator).items(),
         **calculate_metrics(y_true, y_pred_proba, multi=multi)
     }
 
@@ -51,4 +47,4 @@ def extract_selected_features(estimator):
     fs_input_features = estimator['dp'].get_feature_names_out()
     fs_scores = estimator['fs'].scores_
     clf_input_features = estimator[:-1].get_feature_names_out()
-    return {f'{f}_feature_prob': s for f, s in zip(fs_input_features, fs_scores) if f in clf_input_features}
+    return {f'{f}_feature_prob': (s if f in clf_input_features else 0) for f, s in zip(fs_input_features, fs_scores)}

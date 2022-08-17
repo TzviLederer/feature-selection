@@ -60,7 +60,7 @@ def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_f
         f = np.argsort(c)[:1 + int(len(c) * step_frac)]
         for f_i in f:
             r.append(s[f_i])
-            s.remove(s[f_i])
+        s = [x for idx, x in enumerate(s) if idx not in f]
 
     r = np.array(r)[::-1]
 

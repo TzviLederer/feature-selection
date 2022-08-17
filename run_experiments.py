@@ -55,19 +55,14 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     if isinstance(cv, StratifiedKFold):
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit='roc_auc', verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
-        res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
-                                           'n_samples': X.shape[0],
-                                           'n_features_org': X.shape[1],
-                                           'cv_method': str(cv)})
     else:
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit='roc_auc', verbose=2,
                            n_jobs=N_JOBS)
         gcv.fit(X, y, clf__leave_out_mode=True)
-        res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
-                                           'n_samples': X.shape[0],
-                                           'n_features_org': X.shape[1],
-                                           'cv_method': str(cv)})
-
+    res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
+                                       'n_samples': X.shape[0],
+                                       'n_features_org': X.shape[1],
+                                       'cv_method': str(cv)})
     res_df.to_csv(log_filename)
 
     rmtree(cachedir1), rmtree(cachedir2)
@@ -92,7 +87,7 @@ def build_log_dataframe(gcv, base_details):
     for j, experiment in enumerate(gcv.cv_results_['params']):
         for i in range(gcv.n_splits_):
             fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
-            sf = {k[:-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob')}
+            sf = {k[:-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
             sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
             fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
             to_log.append({**fold_res,

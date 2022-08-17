@@ -17,24 +17,34 @@ def fit_with_time(self, X, y, **kwargs):
 
 def fit_for_leave_out(self, X, y, **kwargs):
     cv = get_cv(X)
-    start = time.time()
-    y_pred_proba = cross_val_predict_lpo(self, X, y, cv=cv)
+    y_pred_proba, mean_fit_time, mean_inference_time = cross_val_predict_lpo(self, X, y, cv=cv)
     self.metrics = calculate_metrics(y, y_pred_proba, multi=(len(np.unique(y)) > 2))
-    self.fit_time = (time.time() - start) / cv.get_n_splits(X)
+    self.fit_time = mean_fit_time
+    self.metrics['mean_inference_time'] = mean_inference_time
     return self
 
 
 def cross_val_predict_lpo(pipeline, X, y, cv):
     outputs = defaultdict(list)
+    fit_times = []
+    pred_proba_times = []
     for train_ind, val_ind in cv.split(X):
         x_train, x_val = X[train_ind], X[val_ind]
         y_train, y_val = y[train_ind], y[val_ind]
-        cloned_pipeline = clone(pipeline)
-        cloned_pipeline.org_fit(x_train, y_train)
-        preds = cloned_pipeline.predict_proba(x_val)
+        t1 = time.time()
+        pipeline.org_fit(x_train, y_train)
+        t2 = time.time()
+        preds = pipeline.predict_proba(x_val)
+        t3 = time.time()
         for i, p in zip(val_ind, preds):
             outputs[i].append(p)
-    return np.array([np.stack(v).mean(axis=0) for _, v in sorted(outputs.items(), key=lambda item: item[0])])
+        fit_times.append(t2 - t1)
+        pred_proba_times.append((t3 - t2) / len(x_val))
+        pipeline = clone(pipeline)
+    y_pred_proba = np.array([np.stack(v).mean(axis=0) for _, v in sorted(outputs.items(), key=lambda item: item[0])])
+    mean_fit_time = np.array(fit_times).mean()
+    mean_inference_time = np.array(pred_proba_times).mean()
+    return y_pred_proba, mean_fit_time, mean_inference_time
 
 
 def get_cv(X):
