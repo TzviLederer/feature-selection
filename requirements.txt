@@ -2,6 +2,9 @@ ReliefF
 numpy
 sklearn
 scikit-learn
+imblearn
 pandas
 scipy
+scikit-posthocs
+seaborn
 git+https://github.com/jundongl/scikit-feature

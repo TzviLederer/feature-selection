@@ -1,22 +1,23 @@
+import json
 import os
 import sys
-from collections import defaultdict
-from itertools import product
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 
 import numpy as np
 import pandas as pd
-from sklearn.feature_selection import SelectKBest
-from sklearn.model_selection import cross_validate, StratifiedKFold, cross_val_predict, LeaveOneOut, LeavePOut
-from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
+from disable_cv import DisabledCV
+from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, \
+    WRAPPED_MODELS
+from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
+from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
-from experiments_settings import DATASETS_FILES, FEATURES_SELECTORS, MODELS, KS, get_cv, get_scoring_metrics, N_JOBS, \
-    get_scores_for_loo, OVERRIDE_LOGS
+from scoring_handlers import get_scoring
+from wrapped_estimators.utils import get_cv
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -26,14 +27,15 @@ def run_all(logs_dir='logs', overwrite_logs=False):
     else:
         datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
 
-    for experiment_args in product(MODELS.keys(), datasets_files, FEATURES_SELECTORS.keys(), KS):
-        print(f'Start Experiment, Settings: {experiment_args}')
-        output_log_file = run_experiment(*experiment_args, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
+    for dataset_file in datasets_files:
+        print(f'Start Experiment, Dataset: {dataset_file}')
+        output_log_file = run_experiment(dataset_file, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
         print(f'Finished Experiment, Log file: {output_log_file}')
 
 
-def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrite_logs=True):
-    log_filename = f'{"_".join([estimator_name, Path(filename).name, fs_name, str(k)])}.csv'
+def run_experiment(filename, logs_dir=None, overwrite_logs=True):
+    dataset_name = Path(filename).name
+    log_filename = f'{dataset_name}_results.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -42,132 +44,64 @@ def run_experiment(estimator_name, filename, fs_name, k, logs_dir=None, overwrit
         print('Exists, skipping')
         return log_filename
 
-    df = pd.read_csv(filename)
-    cv = get_cv(df)
-
-    # check if the number of sample in each class is less than fold number
-    df = drop_rare_labels(cv, df)
-
-    X = df.drop(columns=[LABEL_COL])
-    y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
+    X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
     cachedir1, cachedir2 = mkdtemp(), mkdtemp()
-    pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
-                               ('feature_selector', SelectKBest(FEATURES_SELECTORS[fs_name], k=k)),
-                               ('classifier', MODELS[estimator_name])],
+    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X, memory=cachedir1)),
+                               ('fs', 'passthrough'),
+                               ('clf', 'passthrough')],
                         memory=cachedir2)
-
-    base_log = {
-        'learning_algorithm': estimator_name,
-        'dataset': Path(filename).name,
-        'filtering_algorithm': fs_name,
-        'n_selected_features': k,
-        'cv_method': str(cv),
-        'n_samples': df.shape[0],
-        'n_features_org': df.shape[1],
-    }
-
-    # If the cross validation is not leave one out or leave two out, we compute the results per fold
+    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
     if isinstance(cv, StratifiedKFold):
-        results = cross_validate(pipeline, X, y, cv=cv, scoring=get_scoring_metrics(y), return_estimator=True,
-                                 verbose=2, n_jobs=N_JOBS)
-        pd.DataFrame(build_cv_logs(results, base_log)).to_csv(log_filename)
-
+        gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit='roc_auc', verbose=2, n_jobs=N_JOBS)
+        gcv.fit(X, y)
     else:
-        # preprocess for feature selection
-        X, selected_features_names, selected_features_scores = select_features(pipeline, X, y)
-
-        # model pipeline
-        results = fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2)
-        results.update({'selected_features_names': list(selected_features_names),
-                        'selected_features_scores': selected_features_scores,
-                        'fold': None})
-        base_log.update(results)
-        pd.DataFrame([base_log]).to_csv(log_filename)
+        gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit='roc_auc', verbose=2,
+                           n_jobs=N_JOBS)
+        gcv.fit(X, y, clf__leave_out_mode=True)
+    res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
+                                       'n_samples': X.shape[0],
+                                       'n_features_org': X.shape[1],
+                                       'cv_method': str(cv)})
+    res_df.to_csv(log_filename)
 
     rmtree(cachedir1), rmtree(cachedir2)
     return log_filename
 
 
-def fit_and_eval(estimator_name, X, y, cv, cachedir1, cachedir2):
-    pipeline = Pipeline(steps=[('preprocessing', build_data_preprocessor(X, memory=cachedir1)),
-                               ('classifier', MODELS[estimator_name])],
-                        memory=cachedir2)
-
-    # calculate times
-    outputs = cross_validate(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS)
-    times = dict(map(lambda x: (x[0], x[1].mean()), outputs.items()))
-
-    if isinstance(cv, LeaveOneOut):
-        outputs = cross_val_predict(pipeline, X, y, cv=cv, verbose=2, n_jobs=N_JOBS, method='predict_proba')
-    elif isinstance(cv, LeavePOut):
-        outputs = cross_val_predict_lpo(pipeline, X, y, cv)
-    else:
-        raise NotImplementedError('Implemented only for LeaveOneOut or LeavePOut')
-    times.update({f'test_{k}': scoring(y, outputs) for k, scoring in get_scores_for_loo(y).items()})
-    return times
-
-
-def cross_val_predict_lpo(pipeline, X, y, cv):
-    outputs = defaultdict(list)
-    for train_ind, val_ind in cv.split(X=X, y=y):
-        x_train, x_val = X.iloc[train_ind], X.iloc[val_ind]
-        y_train, y_val = y.iloc[train_ind], y.iloc[val_ind]
-        pipeline.fit(x_train, y_train)
-        preds = pipeline.predict_proba(x_val)
-        for i, p in zip(val_ind, preds):
-            outputs[i].append(p)
-    outputs = {k: np.stack(v).mean(axis=0) for k, v in outputs.items()}
-    outputs = pd.DataFrame(outputs).T.loc[y.index].values
-    return outputs
-
-
-def select_features(pipeline, X, y):
-    preprocessing = pipeline.steps[0][1]
-    feature_selector = pipeline.steps[1][1]
-
-    # apply feature selection
-    X_pp = pd.DataFrame(preprocessing.fit_transform(X, y), columns=preprocessing.get_feature_names_out())
-    feature_selector.fit(X_pp, y)
-    selected_features_names = feature_selector.get_feature_names_out()
-    indexes = list(map(lambda x: feature_selector.feature_names_in_.tolist().index(x), selected_features_names))
-    selected_features_scores = list(map(lambda x: feature_selector.scores_[x], indexes))
-
-    # X = pd.DataFrame(feature_selector.transform(X_pp), columns=selected_features_names, index=X.index)
-    return X[selected_features_names], selected_features_names, selected_features_scores
-
-
-def drop_rare_labels(cv, df):
+def get_dataset_and_experiment_params(filename):
+    df = pd.read_csv(filename)
+    cv = get_cv(df)
+    print(str(cv))
+    # check if the number of sample in each class is less than fold number
     if isinstance(cv, StratifiedKFold):
-        classes = df[LABEL_COL].value_counts() > cv.n_splits
-        classes = classes[classes].index.to_list()
-        df = df[df[LABEL_COL].apply(lambda x: x in classes)]
-    return df
+        vc = df[LABEL_COL].value_counts()
+        df = df[df[LABEL_COL].isin(vc[vc > cv.n_splits].index)]
+    X = df.drop(columns=[LABEL_COL])
+    y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
+    return X, y, cv, get_scoring(cv, y)
 
 
-def build_cv_logs(results, base_log):
-    logs = []
-    for i in range(len(results['estimator'])):
-        k_best, k_best_scores = extract_selected_features(results['estimator'][i])
-        logs.append({
-            **base_log,
-            'fold': i + 1,
-            'selected_features_names': ','.join([str(x) for x in k_best]),
-            'selected_features_scores': ','.join(['%.4f' % x for x in k_best_scores]),
-            **{k: '%.4f' % v[i] for k, v in results.items() if k != 'estimator'},
-        })
-    return logs
-
-
-def extract_selected_features(estimator):
-    fs_input_features = estimator['preprocessing'].get_feature_names_out()
-    fs_scores = estimator['feature_selector'].scores_
-    clf_input_features = estimator[:-1].get_feature_names_out()
-    out_scores = {f: s for f, s in zip(fs_input_features, fs_scores) if f in clf_input_features}
-    k_best, k_best_scores = zip(*sorted(out_scores.items(), key=lambda item: item[1], reverse=True))
-    return k_best, k_best_scores
+def build_log_dataframe(gcv, base_details):
+    to_log = []
+    for j, experiment in enumerate(gcv.cv_results_['params']):
+        for i in range(gcv.n_splits_):
+            fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
+            sf = {k[:-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
+            sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
+            fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
+            to_log.append({**fold_res,
+                           **base_details,
+                           'learning_algorithm': experiment['clf'].clf_name_,
+                           'learning_algorithm_params': json.dumps(experiment['clf'].get_params(), skipkeys=True),
+                           'filtering_algorithm': experiment['fs'].score_func.__name__,
+                           'n_selected_features': experiment['fs__k'],
+                           'selected_features_names': ','.join([str(x) for x in sf.keys()]),
+                           'selected_features_scores': ','.join(['%.4f' % x for x in sf.values()]),
+                           })
+    return pd.DataFrame(to_log)
 
 
 if __name__ == '__main__':
-    run_all(overwrite_logs=OVERRIDE_LOGS)
-    # run_experiment('nb', 'data/preprocessed/bladderbatch.csv', 'mrmr', 1, logs_dir='logs')
+    # run_all(overwrite_logs=OVERRIDE_LOGS)
+    run_experiment('data/preprocessed/ALLAML.csv', logs_dir='logs')
