@@ -30,7 +30,7 @@ def _scoring_skf(estimator, X, y_true, multi=False):
         'classifier_fit_time': estimator['clf'].fit_time,
         'feature_selector_fit_time': estimator['fs'].fit_time,
         'mean_inference_time': pred_time / X.shape[0],
-        **extract_selected_features(estimator).items(),
+        **extract_selected_features(estimator),
         **calculate_metrics(y_true, y_pred_proba, multi=multi)
     }
 

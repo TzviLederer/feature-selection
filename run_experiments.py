@@ -104,4 +104,4 @@ def build_log_dataframe(gcv, base_details):
 
 if __name__ == '__main__':
     # run_all(overwrite_logs=OVERRIDE_LOGS)
-    run_experiment('data/preprocessed/ALLAML.csv', logs_dir='logs')
+    run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='logs')
