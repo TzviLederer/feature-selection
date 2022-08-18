@@ -18,8 +18,8 @@ from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
 from scoring_handlers import get_scoring
 from wrapped_estimators.utils import get_cv
-from sklearnex import patch_sklearn
-patch_sklearn()
+# from sklearnex import patch_sklearn
+# patch_sklearn()
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
