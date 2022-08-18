@@ -48,17 +48,17 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
 
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
-    cachedir1, cachedir2 = mkdtemp(), mkdtemp()
-    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X, memory=cachedir1)),
+    cachedir = mkdtemp()
+    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
                                ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
-                        memory=cachedir2)
+                        memory=cachedir)
     grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
     if isinstance(cv, StratifiedKFold):
-        gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit='roc_auc', verbose=2, n_jobs=N_JOBS)
+        gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
     else:
-        gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit='roc_auc', verbose=2,
+        gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
         gcv.fit(X, y, clf__leave_out_mode=True)
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
@@ -67,7 +67,7 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
                                        'cv_method': str(cv)})
     res_df.to_csv(log_filename)
 
-    rmtree(cachedir1), rmtree(cachedir2)
+    rmtree(cachedir)
     return log_filename
 
 
