@@ -5,4 +5,5 @@ pandas
 scipy
 scikit-posthocs
 seaborn
+scikit-learn-intelex
 git+https://github.com/jundongl/scikit-feature

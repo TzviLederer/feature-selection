@@ -18,6 +18,8 @@ from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
 from scoring_handlers import get_scoring
 from wrapped_estimators.utils import get_cv
+from sklearnex import patch_sklearn
+patch_sklearn()
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
@@ -35,7 +37,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name}_results.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_results.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -102,5 +104,5 @@ def build_log_dataframe(gcv, base_details):
 
 
 if __name__ == '__main__':
-    # run_all(overwrite_logs=OVERRIDE_LOGS)
-    run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='logs')
+    run_all(overwrite_logs=OVERRIDE_LOGS)
+    # run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='results')
