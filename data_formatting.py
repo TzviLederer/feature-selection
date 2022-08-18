@@ -1,57 +1,58 @@
 import os
 import re
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import scipy.io
 from scipy.io import arff
+import asyncio
 
 LABEL_COL = 'y'
 with_index = False
 
-sk_list = [('data/scikit-feature/raw/ALLAML.mat', 'data/preprocessed/ALLAML.csv'),
-           ('data/scikit-feature/raw/arcene.mat', 'data/preprocessed/arcene.csv'),
-           ('data/scikit-feature/raw/BASEHOCK.mat', 'data/preprocessed/BASEHOCK.csv'),
-           ('data/scikit-feature/raw/Carcinom.mat', 'data/preprocessed/Carcinom.csv'),
-           ('data/scikit-feature/raw/CLL-SUB-111.mat', 'data/preprocessed/CLL-SUB-111.csv')]
+sk_list = ['data/raw/scikit-feature/ALLAML.mat',
+           'data/raw/scikit-feature/arcene.mat',
+           'data/raw/scikit-feature/BASEHOCK.mat',
+           'data/raw/scikit-feature/Carcinom.mat',
+           'data/raw/scikit-feature/CLL-SUB-111.mat',
+           'data/raw/scikit-feature/COIL20.mat']
 
-arff_list = [('data/ARFF/raw/Breast.arff', 'data/preprocessed/Breast.csv'),
-             ('data/ARFF/raw/CNS.arff', 'data/preprocessed/CNS.csv'),
-             ('data/ARFF/raw/Lung.arff', 'data/preprocessed/Lung.csv'),
-             ('data/ARFF/raw/Lymphoma.arff', 'data/preprocessed/Lymphoma.csv'),
-             ('data/ARFF/raw/MLL.arff', 'data/preprocessed/MLL.csv')]
+arff_list = ['data/raw/ARFF/Breast.arff',
+             'data/raw/ARFF/CNS.arff',
+             'data/raw/ARFF/Lung.arff',
+             'data/raw/ARFF/Lymphoma.arff',
+             'data/raw/ARFF/MLL.arff']
 
-bioconductor_list = [('data/bioconductor/raw/ALL.csv', 'data/preprocessed/ALL.csv'),
-                     ('data/bioconductor/raw/ayeastCC.csv', 'data/preprocessed/ayeastCC.csv'),
-                     ('data/bioconductor/raw/bcellViper.csv', 'data/preprocessed/bcellViper.csv'),
-                     ('data/bioconductor/raw/bladderbatch.csv', 'data/preprocessed/bladderbatch.csv'),
-                     ('data/bioconductor/raw/breastCancerVDX.csv', 'data/preprocessed/breastCancerVDX.csv')]
+bioconductor_list = ['data/raw/bioconductor/ALL.csv',
+                     'data/raw/bioconductor/ayeastCC.csv',
+                     'data/raw/bioconductor/bcellViper.csv',
+                     'data/raw/bioconductor/bladderbatch.csv',
+                     'data/raw/bioconductor/breastCancerVDX.csv']
 
-microbiomic_list = [('data/microbiomic/raw/40168_2013_11_MOESM7_ESM/PBS.csv', 'data/preprocessed/PBS.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM3_ESM/CSS.csv', 'data/preprocessed/CSS.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM5_ESM/FSH.csv', 'data/preprocessed/FSH.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM1_ESM/CBH.csv', 'data/preprocessed/CBH.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM6_ESM/BP.csv', 'data/preprocessed/BP.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM4_ESM/FS.csv', 'data/preprocessed/FS.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM8_ESM/PDX.csv', 'data/preprocessed/PDX.csv'),
-                    ('data/microbiomic/raw/40168_2013_11_MOESM2_ESM/CS.csv', 'data/preprocessed/CS.csv')]
+microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM3_ESM/CSS.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM4_ESM/FS.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM2_ESM/CS.csv']
 
 
-def main():
-    for input_path, output_path in microbiomic_list:
-        print(input_path)
-        preprocess_microbiomic(input_path, output_path)
+def process_all(output_folder):
+    os.makedirs(output_folder, exist_ok=True)
+    process_files(microbiomic_list, preprocess_microbiomic, output_folder),
+    process_files(bioconductor_list, preprocess_bioconductor, output_folder),
+    process_files(arff_list, preprocess_arff, output_folder),
+    process_files(sk_list, preprocess_sk, output_folder)
 
-    for input_path, output_path in bioconductor_list:
-        print(input_path)
-        preprocess_bioconductor(input_path, output_path)
 
-    for input_path, output_path in arff_list:
-        print(input_path)
-        preprocess_arff(input_path, output_path)
+async def process_files(files, processor, output_folder):
+    for input_path in files:
+        processor(input_path, build_output_path(input_path, output_folder))
+        print(f'Finished processing {input_path}')
 
-    for input_path, output_path in sk_list:
-        print(input_path)
-        preprocess_sk(input_path=input_path, output_path=output_path)
+
+def build_output_path(input_path, output_folder):
+    return f'{output_folder}/{"".join(Path(input_path).name.split(".")[:-1])}.csv'
 
 
 def preprocess_sk(input_path, output_path):
@@ -121,5 +122,4 @@ def preprocess_arff(input_path, output_path):
 
 
 if __name__ == '__main__':
-    os.makedirs('data/preprocessed', exist_ok=True)
-    main()
+    process_all('data/preprocessed')
