@@ -7,30 +7,38 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from itertools import product
 
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 from data_formatting import LABEL_COL
 from disable_cv import DisabledCV
-from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, \
-    WRAPPED_MODELS
+from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
 from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
 from scoring_handlers import get_scoring
+from wrapped_estimators import WrappedSelectKBest
 from wrapped_estimators.utils import get_cv
+from feature_selectors import *
 # from sklearnex import patch_sklearn
 # patch_sklearn()
+
+FEATURES_SELECTORS = [[select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs],
+                      [svm_fs], [svm_fs_New],
+                      [grey_wolf_fs], [grey_wolf_fs_New]]
+WRAPPED_FEATURES_SELECTORS = [[WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), verbose=0).cache(fs)) for fs in fss] for fss in FEATURES_SELECTORS]
 
 
 def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     os.makedirs(logs_dir, exist_ok=True)
-    task_id = sys.getenv('SLURM_ARRAY_TASK_ID')
-    filename, feature_selector = list(product(DATASETS_FILES, WRAPPED_FEATURES_SELECTORS))[task_id]
+    task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
+    feature_selectors, filename = list(product(WRAPPED_FEATURES_SELECTORS, DATASETS_FILES))[task_id]
     print(f'Start Experiment, Dataset: {filename}')
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_{feature_selector.__name__}_results.csv'
+    fs_name = feature_selectors[0].__name__ if len(feature_selectors) == 1 else 'baselines'
+    log_filename = f'{dataset_name[:-len(".csv")]}_{fs_name}_results.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -46,7 +54,7 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
                                ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
                         memory=cachedir)
-    grid_params = {"fs": [feature_selector], "fs__k": KS, "clf": WRAPPED_MODELS}
+    grid_params = {"fs": feature_selectors, "fs__k": KS, "clf": WRAPPED_MODELS}
     if isinstance(cv, StratifiedKFold):
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
