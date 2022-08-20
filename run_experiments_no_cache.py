@@ -37,7 +37,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_results.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_results_no_cache.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -48,11 +48,9 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
 
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
-    cachedir = mkdtemp()
     pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
                                ('fs', 'passthrough'),
-                               ('clf', 'passthrough')],
-                        memory=cachedir)
+                               ('clf', 'passthrough')])
     grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
     if isinstance(cv, StratifiedKFold):
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
@@ -67,7 +65,6 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
                                        'cv_method': str(cv)})
     res_df.to_csv(log_filename)
 
-    rmtree(cachedir)
     return log_filename
 
 
