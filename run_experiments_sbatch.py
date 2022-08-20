@@ -1,9 +1,11 @@
+import itertools
 import json
 import os
 import sys
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
+from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -22,22 +24,13 @@ from wrapped_estimators.utils import get_cv
 # patch_sklearn()
 
 
-def run_all(logs_dir='logs', overwrite_logs=False):
+def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     os.makedirs(logs_dir, exist_ok=True)
-    if len(sys.argv) == 1:
-        datasets_files = DATASETS_FILES
-    else:
-        datasets_files = [name for arg in [sys.argv[1]] for name in DATASETS_FILES if arg in name]
-
-    for dataset_file in datasets_files:
-        print(f'Start Experiment, Dataset: {dataset_file}')
-        output_log_file = run_experiment(dataset_file, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
-        print(f'Finished Experiment, Log file: {output_log_file}')
-
-
-def run_experiment(filename, logs_dir=None, overwrite_logs=True):
+    task_id = sys.getenv('SLURM_ARRAY_TASK_ID')
+    filename, feature_selector = list(product(DATASETS_FILES, WRAPPED_FEATURES_SELECTORS))[task_id]
+    print(f'Start Experiment, Dataset: {filename}')
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_{sys.argv[2]}_results_no_cache.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_{feature_selector.__name__}_results.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -48,10 +41,12 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
 
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
+    cachedir = mkdtemp()
     pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
                                ('fs', 'passthrough'),
-                               ('clf', 'passthrough')])
-    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
+                               ('clf', 'passthrough')],
+                        memory=cachedir)
+    grid_params = {"fs": [feature_selector], "fs__k": KS, "clf": WRAPPED_MODELS}
     if isinstance(cv, StratifiedKFold):
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
@@ -65,6 +60,8 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
                                        'cv_method': str(cv)})
     res_df.to_csv(log_filename)
 
+    rmtree(cachedir)
+    print(f'Finished Experiment, Log file: {log_filename}')
     return log_filename
 
 
@@ -86,7 +83,7 @@ def build_log_dataframe(gcv, base_details):
     for j, experiment in enumerate(gcv.cv_results_['params']):
         for i in range(gcv.n_splits_):
             fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
-            sf = {k[:-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
+            sf = {k[len('test_'):-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
             sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
             fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
             to_log.append({**fold_res,
@@ -97,9 +94,8 @@ def build_log_dataframe(gcv, base_details):
                            'selected_features_names': ','.join([str(x) for x in sf.keys()]),
                            'selected_features_scores': ','.join(['%.4f' % x for x in sf.values()]),
                            })
-    return pd.DataFrame(to_log)
+    return pd.DataFrame(to_log).rename(columns={'test_fit_time': 'fit_time'})
 
 
 if __name__ == '__main__':
-    run_all(overwrite_logs=OVERRIDE_LOGS)
-    # run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='results')
+    run_experiment()

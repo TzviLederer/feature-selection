@@ -1,7 +1,8 @@
 from pathlib import Path
 from feature_selectors import *
 from wrapped_estimators import *
-import sys
+from tempfile import mkdtemp
+import joblib
 
 WRAPPED_MODELS = [WrappedGaussianNB(),
                   WrappedRandomForestClassifier(),
@@ -12,7 +13,7 @@ WRAPPED_MODELS = [WrappedGaussianNB(),
 FEATURES_SELECTORS = [select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs,
                       svm_fs, svm_fs_New,
                       grey_wolf_fs, grey_wolf_fs_New]
-WRAPPED_FEATURES_SELECTORS = [WrappedSelectKBest(score_func=fs) for fs in FEATURES_SELECTORS if (not len(sys.argv) >= 2) or (fs.__name__ == sys.argv[2])]
+WRAPPED_FEATURES_SELECTORS = [WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), verbose=0).cache(fs)) for fs in FEATURES_SELECTORS]
 
 KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 
