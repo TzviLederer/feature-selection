@@ -37,7 +37,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_results_no_cache.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_{sys.argv[2]}_results_no_cache.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
