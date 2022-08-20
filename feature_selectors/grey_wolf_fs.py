@@ -19,22 +19,22 @@ def one_wolf_fitness(X, y, wolf, alpha):
 
 
 def two_phase_mutation(X, y, wolf, fitness, alpha, mutation_prob):
-    wolf_mutated = wolf.copy()
     one_positions = np.argwhere(wolf == 1).T[0]
     for i in one_positions:
         r = np.random.rand()
         if r < mutation_prob:
+            wolf_mutated = wolf.copy()
             wolf_mutated[i] = 0
             mutated_fitness = one_wolf_fitness(X, y, wolf_mutated, alpha)
             if mutated_fitness < fitness:
                 fitness = mutated_fitness
                 wolf = wolf_mutated
 
-    wolf_mutated = wolf.copy()
     zero_positions = np.argwhere(wolf == 0).T[0]
     for i in zero_positions:
         r = np.random.rand()
         if r < mutation_prob:
+            wolf_mutated = wolf.copy()
             wolf_mutated[i] = 1
             mutated_fitness = one_wolf_fitness(X, y, wolf_mutated, alpha)
             if mutated_fitness < fitness:
@@ -55,7 +55,7 @@ def calculate_fitnesses(X, y, wolfs, alpha, two_phase_mutation_prob=None):
     return fitnesses
 
 
-def grey_wolf_fs(X, y, n_agents=5, iterations=30, alpha=0.001, two_phase_mutation_prob=0.5):
+def grey_wolf_fs(X, y, n_agents=5, iterations=30, alpha=0.01, two_phase_mutation_prob=0.1):
     n = X.shape[1]
     wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
@@ -94,7 +94,7 @@ def grey_wolf_fs(X, y, n_agents=5, iterations=30, alpha=0.001, two_phase_mutatio
     return min_fitness_x_alpha
 
 
-def grey_wolf_fs_New(X, y, n_agents=5, iterations=30, alpha=0.001, two_phase_mutation_prob=0.5, n_layers=5):
+def grey_wolf_fs_New(X, y, n_agents=5, iterations=30, alpha=0.01, two_phase_mutation_prob=0.1, n_layers=5):
     n = X.shape[1]
     wolfs = (np.random.rand(n_agents, n) > .5).astype(float)
 
