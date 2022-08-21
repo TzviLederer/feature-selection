@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -27,7 +28,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
     if len(sys.argv) == 1:
         datasets_files = DATASETS_FILES
     else:
-        datasets_files = [name for arg in [sys.argv[1]] for name in DATASETS_FILES if arg in name]
+        datasets_files = [name for arg in [sys.argv[1:]] for name in DATASETS_FILES if arg in name]
 
     for dataset_file in datasets_files:
         print(f'Start Experiment, Dataset: {dataset_file}')
@@ -37,7 +38,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_{sys.argv[2]}_results.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_results_{int(time.time())}.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
