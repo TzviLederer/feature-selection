@@ -12,7 +12,7 @@ LABEL_COL = 'y'
 with_index = False
 
 sk_list = ['data/raw/scikit-feature/ALLAML.mat',
-           'data/raw/scikit-feature/arcene.mat',
+           #'data/raw/scikit-feature/arcene.mat',
            'data/raw/scikit-feature/BASEHOCK.mat',
            'data/raw/scikit-feature/Carcinom.mat',
            'data/raw/scikit-feature/CLL-SUB-111.mat',
@@ -28,7 +28,11 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
                      'data/raw/bioconductor/ayeastCC.csv',
                      'data/raw/bioconductor/bcellViper.csv',
                      'data/raw/bioconductor/bladderbatch.csv',
-                     'data/raw/bioconductor/breastCancerVDX.csv']
+                     #'data/raw/bioconductor/breastCancerVDX.csv',
+                     'data/raw/bioconductor/CLL.csv',
+                     'data/raw/bioconductor/curatedOvarianData.csv',
+                     'data/raw/bioconductor/leukemiasEset.csv',
+                     ]
 
 microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM3_ESM/CSS.csv',
@@ -45,7 +49,7 @@ def process_all(output_folder):
     process_files(sk_list, preprocess_sk, output_folder)
 
 
-async def process_files(files, processor, output_folder):
+def process_files(files, processor, output_folder):
     for input_path in files:
         processor(input_path, build_output_path(input_path, output_folder))
         print(f'Finished processing {input_path}')
