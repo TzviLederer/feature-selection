@@ -38,7 +38,11 @@ WRAPPED_FEATURES_SELECTORS = [[WrappedSelectKBest(score_func=joblib.Memory(mkdte
 def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
-    feature_selectors, filename = list(product(WRAPPED_FEATURES_SELECTORS, DATASETS_FILES))[task_id]
+    if len(sys.argv) == 1:
+        datasets_files = DATASETS_FILES
+    else:
+        datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
+    feature_selectors, filename = list(product(WRAPPED_FEATURES_SELECTORS, datasets_files))[task_id]
     print(f'Start Experiment, Dataset: {filename}')
     dataset_name = Path(filename).name
     fs_name = feature_selectors[0].score_func.__name__ if len(feature_selectors) == 1 else 'baselines'
