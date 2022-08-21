@@ -38,7 +38,10 @@ microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM3_ESM/CSS.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM4_ESM/FS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM2_ESM/CS.csv']
+                    'data/raw/microbiomic/40168_2013_11_MOESM2_ESM/CS.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM1_ESM/CBH.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM6_ESM/BP.csv',
+                    'data/raw/microbiomic/40168_2013_11_MOESM8_ESM/PDX.csv']
 
 
 def process_all(output_folder):
