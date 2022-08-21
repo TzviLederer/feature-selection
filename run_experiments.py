@@ -28,7 +28,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
     if len(sys.argv) == 1:
         datasets_files = DATASETS_FILES
     else:
-        datasets_files = [name for arg in [sys.argv[1:]] for name in DATASETS_FILES if arg in name]
+        datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
 
     for dataset_file in datasets_files:
         print(f'Start Experiment, Dataset: {dataset_file}')
