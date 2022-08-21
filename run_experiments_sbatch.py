@@ -11,6 +11,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
+from run_experiments import get_dataset_and_experiment_params, build_log_dataframe
 
 from data_formatting import LABEL_COL
 from disable_cv import DisabledCV
@@ -71,38 +72,6 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     rmtree(cachedir)
     print(f'Finished Experiment, Log file: {log_filename}')
     return log_filename
-
-
-def get_dataset_and_experiment_params(filename):
-    df = pd.read_csv(filename)
-    cv = get_cv(df)
-    print(str(cv))
-    # check if the number of sample in each class is less than fold number
-    if isinstance(cv, StratifiedKFold):
-        vc = df[LABEL_COL].value_counts()
-        df = df[df[LABEL_COL].isin(vc[vc > cv.n_splits].index)]
-    X = df.drop(columns=[LABEL_COL])
-    y = pd.Series(LabelEncoder().fit_transform(df[LABEL_COL]))
-    return X, y, cv, get_scoring(cv, y)
-
-
-def build_log_dataframe(gcv, base_details):
-    to_log = []
-    for j, experiment in enumerate(gcv.cv_results_['params']):
-        for i in range(gcv.n_splits_):
-            fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
-            sf = {k[len('test_'):-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
-            sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
-            fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
-            to_log.append({**fold_res,
-                           **base_details,
-                           'learning_algorithm': experiment['clf'].clf_name_,
-                           'filtering_algorithm': experiment['fs'].score_func.__name__,
-                           'n_selected_features': experiment['fs__k'],
-                           'selected_features_names': ','.join([str(x) for x in sf.keys()]),
-                           'selected_features_scores': ','.join(['%.4f' % x for x in sf.values()]),
-                           })
-    return pd.DataFrame(to_log).rename(columns={'test_fit_time': 'fit_time'})
 
 
 if __name__ == '__main__':

@@ -87,5 +87,6 @@ def extract_best_settings_from_results(results_file_name, dataset_name):
     return fs, clf, k
 
 if __name__ == '__main__':
+    results_file_name = 'unified_df.csv'
     # run_all(overwrite_logs=OVERRIDE_LOGS)
-    run_experiment('data/preprocessed/ALLAML.csv', logs_dir='logs')
+    run_experiment('data/preprocessed/ALLAML.csv', results_file_name, logs_dir='logs')
