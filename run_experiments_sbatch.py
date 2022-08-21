@@ -41,7 +41,7 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     feature_selectors, filename = list(product(WRAPPED_FEATURES_SELECTORS, DATASETS_FILES))[task_id]
     print(f'Start Experiment, Dataset: {filename}')
     dataset_name = Path(filename).name
-    fs_name = feature_selectors[0].__name__ if len(feature_selectors) == 1 else 'baselines'
+    fs_name = feature_selectors[0].score_func.__name__ if len(feature_selectors) == 1 else 'baselines'
     log_filename = f'{dataset_name[:-len(".csv")]}_{fs_name}_results.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
