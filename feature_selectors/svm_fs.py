@@ -35,6 +35,14 @@ def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
     return 1 - t / max(t)
 
 
+def rbf_svm_fs(X, y, svm_max_iter=10_000_000, verbose=0):
+    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='rbf', verbose=verbose)
+
+
+def poly_svm_fs(X, y, svm_max_iter=10_000_000, verbose=0):
+    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='poly', verbose=verbose)
+
+
 def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_frac=0.1):
     X = np.array(X)
     y = np.array(y)
@@ -67,3 +75,11 @@ def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_f
     # make scores
     t = np.array(list(dict(sorted(enumerate(r), key=lambda x: x[1])).keys()))
     return 1 - t / max(t)
+
+
+def rbf_svm_fs_New(X, y, svm_max_iter=10_000_000, verbose=0):
+    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='rbf', verbose=verbose)
+
+
+def poly_svm_fs_New(X, y, svm_max_iter=10_000_000, verbose=0):
+    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='poly', verbose=verbose)

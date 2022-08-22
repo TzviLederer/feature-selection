@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -37,7 +38,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     dataset_name = Path(filename).name
-    log_filename = f'{dataset_name[:-len(".csv")]}_results.csv'
+    log_filename = f'{dataset_name[:-len(".csv")]}_results_{int(time.time())}.csv'
     if logs_dir:
         log_filename = f'{logs_dir}/{log_filename}'
 
@@ -89,7 +90,7 @@ def build_log_dataframe(gcv, base_details):
     for j, experiment in enumerate(gcv.cv_results_['params']):
         for i in range(gcv.n_splits_):
             fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
-            sf = {k[:-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
+            sf = {k[len('test_'):-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
             sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
             fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
             to_log.append({**fold_res,

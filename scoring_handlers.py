@@ -46,5 +46,6 @@ def calculate_metrics(y_true, y_pred_proba, multi=False):
 def extract_selected_features(estimator):
     fs_input_features = estimator['dp'].get_feature_names_out()
     fs_scores = estimator['fs'].scores_
-    clf_input_features = estimator[:-1].get_feature_names_out()
-    return {f'{f}_feature_prob': (s if f in clf_input_features else 0) for f, s in zip(fs_input_features, fs_scores)}
+    clf_input_features = estimator['fs'].get_feature_names_out(fs_input_features)
+    res_scores = {f: s for f, s in zip(fs_input_features, fs_scores) if f in clf_input_features}
+    return {f'{f}_feature_prob': res_scores.get(f, 0) for f in estimator['dp'].feature_names_in_}

@@ -19,42 +19,22 @@ from data_preprocessor import build_data_preprocessor
 from imblearn.over_sampling import BorderlineSMOTE  # choose the least common samples to duplicate (could perform better
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
+from run_aug_experiment import DataPreprocessorWrapper
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
 
 
-class DataPreprocessorWrapper(BaseEstimator):
-    def __init__(self, estimator):
-        """
-        Needed because imblearn do not excepts sklearn pipelines inside its own pipeline
-        """
-
-        self.estimator = estimator
-        self.feature_names_in_ = None
-
-    def fit(self, X, y=None, **kwargs):
-        self.estimator.fit(X, y)
-        self.feature_names_in_ = self.estimator.feature_names_in_
-        return self
-
-    def transform(self, X, y=None, **kwargs):
-        return self.estimator.transform(X, **kwargs)
-
-    def get_feature_names_out(self, **kwargs):
-        return self.estimator.get_feature_names_out(**kwargs)
-
-
-def run_all(results_file_name, logs_dir='logs_aug2', overwrite_logs=False):
+def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
+    task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
     if len(sys.argv) == 1:
         datasets_files = DATASETS_FILES
     else:
         datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
-
-    for dataset_file in datasets_files:
-        print(f'Start Experiment, Dataset: {dataset_file}')
-        output_log_file = run_experiment(dataset_file, results_file_name, logs_dir=logs_dir,
-                                         overwrite_logs=overwrite_logs)
-        print(f'Finished Experiment, Log file: {output_log_file}')
+    dataset_file = datasets_files[task_id]
+    print(f'Start Experiment, Dataset: {dataset_file}')
+    output_log_file = run_experiment(dataset_file, results_file_name, logs_dir=logs_dir,
+                                     overwrite_logs=overwrite_logs)
+    print(f'Finished Experiment, Log file: {output_log_file}')
 
 
 def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_logs=False):
