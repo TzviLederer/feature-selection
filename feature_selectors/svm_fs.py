@@ -27,7 +27,7 @@ def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear'):
     r = np.array(r)[::-1]
 
     # make scores
-    t = np.array(list(dict(sorted(enumerate(r), key=lambda x: x[1])).keys()))
+    t = np.array([x[0] for x in sorted(enumerate(r), key=lambda x: x[1])])
     return 1 - t / max(t)
 
 
@@ -65,7 +65,7 @@ def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', step_frac=0.1):
     r = np.array(r)[::-1]
 
     # make scores
-    t = np.array(list(dict(sorted(enumerate(r), key=lambda x: x[1])).keys()))
+    t = np.array([x[0] for x in sorted(enumerate(r), key=lambda x: x[1])])
     return 1 - t / max(t)
 
 
