@@ -44,7 +44,6 @@ class DataPreprocessorWrapper(BaseEstimator):
         return self.estimator.get_feature_names_out(**kwargs)
 
 
-
 def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
@@ -54,7 +53,8 @@ def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
 
     for dataset_file in datasets_files:
         print(f'Start Experiment, Dataset: {dataset_file}')
-        output_log_file = run_experiment(dataset_file, results_file_name, logs_dir=logs_dir, overwrite_logs=overwrite_logs)
+        output_log_file = run_experiment(dataset_file, results_file_name, logs_dir=logs_dir,
+                                         overwrite_logs=overwrite_logs)
         print(f'Finished Experiment, Log file: {output_log_file}')
 
 
@@ -116,5 +116,4 @@ def extract_best_settings_from_results(results_file_name, dataset_name):
 
 
 if __name__ == '__main__':
-    results_file_name = 'unified_df.csv'
-    run_all(results_file_name, overwrite_logs=OVERRIDE_LOGS)
+    run_all('unified_df.csv', overwrite_logs=OVERRIDE_LOGS)
