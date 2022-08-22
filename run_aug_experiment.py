@@ -43,7 +43,7 @@ class DataPreprocessorWrapper(BaseEstimator):
         return self.estimator.get_feature_names_out(**kwargs)
 
 
-def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
+def run_all(results_file_name, logs_dir='logs_aug2', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
         datasets_files = DATASETS_FILES
@@ -77,9 +77,9 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
 
     cachedir = mkdtemp()
     pipeline = Pipeline(steps=[('dp', DataPreprocessorWrapper(build_data_preprocessor(X))),
+                               ('fs', 'passthrough'),
                                ('pca', pca_aug),
                                ('smote', BorderlineSMOTE()),
-                               ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
                         memory=cachedir)
     grid_params = {"fs": [fs], "clf": [clf], "fs__k": [k]}

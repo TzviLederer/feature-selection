@@ -57,9 +57,9 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
 
     cachedir = mkdtemp()
     pipeline = Pipeline(steps=[('dp', DataPreprocessorWrapper(build_data_preprocessor(X))),
+                               ('fs', 'passthrough'),
                                ('pca', pca_aug),
                                ('smote', BorderlineSMOTE()),
-                               ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
                         memory=cachedir)
     grid_params = {"fs": [fs], "clf": [clf], "fs__k": [k]}
