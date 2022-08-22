@@ -41,13 +41,16 @@ microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM6_ESM/BP.csv',
                     'data/raw/microbiomic/40168_2013_11_MOESM8_ESM/PDX.csv']
 
+datamicroarray_list = {f'data/raw/datamicroarray/{f.name}' for f in Path('data/raw/datamicroarray/').glob('*.csv') if 'inputs' in f.name}
+
 
 def process_all(output_folder):
     os.makedirs(output_folder, exist_ok=True)
-    process_files(microbiomic_list, preprocess_microbiomic, output_folder),
-    process_files(bioconductor_list, preprocess_bioconductor, output_folder),
-    process_files(arff_list, preprocess_arff, output_folder),
-    process_files(sk_list, preprocess_sk, output_folder)
+    #process_files(microbiomic_list, preprocess_microbiomic, output_folder),
+    #process_files(bioconductor_list, preprocess_bioconductor, output_folder),
+    #process_files(arff_list, preprocess_arff, output_folder),
+    #process_files(sk_list, preprocess_sk, output_folder)
+    process_files(datamicroarray_list, preprocess_datamicroarray, output_folder)
 
 
 def process_files(files, processor, output_folder):
@@ -82,6 +85,13 @@ def preprocess_microbiomic(input_path, output_path):
     y = pd.Series(df.index, index=df.index).apply(lambda x: re.sub(r'\.\d+', '', x))
     class_to_values = {v: i for i, v in enumerate(y.value_counts().index)}
     df[LABEL_COL] = y.map(class_to_values)
+    df.to_csv(output_path, index=with_index)
+
+
+def preprocess_datamicroarray(input_path, output_path):
+    df = pd.read_csv(input_path, header=None)
+    df[LABEL_COL] = pd.read_csv(f'{input_path.split("_")[0]}_outputs.csv', header=None)[0]
+    df.columns = [str(c) for c in df.columns]
     df.to_csv(output_path, index=with_index)
 
 
