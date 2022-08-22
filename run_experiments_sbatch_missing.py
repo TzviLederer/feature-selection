@@ -28,17 +28,17 @@ from feature_selectors import *
 
 
 missing_experiments = [['ALL', poly_svm_fs_New],
-       ['BASEHOCK', poly_svm_fs],
-       ['CLL', grey_wolf_fs_New],
-       ['CLL', poly_svm_fs],
-       ['CLL', poly_svm_fs_New],
-       ['CLL', rbf_svm_fs],
-       ['CLL', svm_fs_New],
-       ['Lymphoma', poly_svm_fs_New],
-       ['breastCancerVDX', grey_wolf_fs_New],
-       ['breastCancerVDX', poly_svm_fs],
-       ['curatedOvarianData', rbf_svm_fs_New],
-       ['curatedOvarianData', svm_fs_New]]
+       ['BASEHOCK.csv', poly_svm_fs],
+       ['CLL.csv', grey_wolf_fs_New],
+       ['CLL.csv', poly_svm_fs],
+       ['CLL.csv', poly_svm_fs_New],
+       ['CLL.csv', rbf_svm_fs],
+       ['CLL.csv', svm_fs_New],
+       ['Lymphoma.csv', poly_svm_fs_New],
+       ['breastCancerVDX.csv', grey_wolf_fs_New],
+       ['breastCancerVDX.csv', poly_svm_fs],
+       ['curatedOvarianData.csv', rbf_svm_fs_New],
+       ['curatedOvarianData.csv', svm_fs_New]]
 
 
 def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
