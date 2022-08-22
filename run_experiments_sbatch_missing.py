@@ -23,22 +23,17 @@ from scoring_handlers import get_scoring
 from wrapped_estimators import WrappedSelectKBest
 from wrapped_estimators.utils import get_cv
 from feature_selectors import *
+
 # from sklearnex import patch_sklearn
 # patch_sklearn()
 
 
-missing_experiments = [['./data/preprocessed/ALL.csv', poly_svm_fs_New],
-       ['./data/preprocessed/BASEHOCK.csv', poly_svm_fs],
-       ['./data/preprocessed/CLL.csv', grey_wolf_fs_New],
-       ['./data/preprocessed/CLL.csv', poly_svm_fs],
-       ['./data/preprocessed/CLL.csv', poly_svm_fs_New],
-       ['./data/preprocessed/CLL.csv', rbf_svm_fs],
-       ['./data/preprocessed/CLL.csv', svm_fs_New],
-       ['./data/preprocessed/Lymphoma.csv', poly_svm_fs_New],
-       ['./data/preprocessed/breastCancerVDX.csv', grey_wolf_fs_New],
-       ['./data/preprocessed/breastCancerVDX.csv', poly_svm_fs],
-       ['./data/preprocessed/curatedOvarianData.csv', rbf_svm_fs_New],
-       ['./data/preprocessed/curatedOvarianData.csv', svm_fs_New]]
+missing_experiments = [
+    ['./data/preprocessed/BASEHOCK.csv', poly_svm_fs],
+    ['./data/preprocessed/CLL.csv', grey_wolf_fs_New],
+    ['./data/preprocessed/breastCancerVDX.csv', grey_wolf_fs_New],
+    ['./data/preprocessed/breastCancerVDX.csv', poly_svm_fs]
+]
 
 
 def run_experiment(logs_dir='sbatch_logs_missing', overwrite_logs=True):
@@ -59,7 +54,6 @@ def run_experiment(logs_dir='sbatch_logs_missing', overwrite_logs=True):
         return log_filename
 
     print(f'will log to: {log_filename}')
-
 
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
