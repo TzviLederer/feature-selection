@@ -10,7 +10,8 @@ from itertools import product
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.preprocessing import LabelEncoder, PowerTransformer
 from run_experiments import get_dataset_and_experiment_params, build_log_dataframe
 
 from data_formatting import LABEL_COL
@@ -18,7 +19,7 @@ from disable_cv import DisabledCV
 from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
 from sklearn.pipeline import Pipeline
-from data_preprocessor import build_data_preprocessor
+from data_preprocessor import build_data_preprocessor, build_column_transformer
 from scoring_handlers import get_scoring
 from wrapped_estimators import WrappedSelectKBest
 from wrapped_estimators.utils import get_cv
@@ -58,7 +59,9 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
     cachedir = mkdtemp()
-    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
+    pipeline = Pipeline(steps=[('ct', build_column_transformer(X)),
+                               ('vt', VarianceThreshold()),
+                               ('pt', PowerTransformer()),
                                ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
                         memory=cachedir)

@@ -8,11 +8,14 @@ from sklearn.preprocessing import PowerTransformer, OrdinalEncoder
 
 
 def build_data_preprocessor(X, memory=None):
+    return make_pipeline(build_column_transformer(X), VarianceThreshold(), PowerTransformer(), memory=memory)
+
+
+def build_column_transformer(X):
     numeric_transformer = SimpleImputer(missing_values=np.nan, strategy="mean")
     categorical_transformer = make_pipeline(SimpleImputer(missing_values=np.nan, strategy="constant"), OrdinalEncoder())
-    column_transformer = make_column_transformer(
+
+    return make_column_transformer(
         (numeric_transformer, X.select_dtypes(include=['number']).columns),
         (categorical_transformer, X.select_dtypes(exclude=['number']).columns),
         verbose_feature_names_out=False)
-
-    return make_pipeline(column_transformer, VarianceThreshold(), PowerTransformer(), memory=memory)

@@ -8,13 +8,14 @@ from tempfile import mkdtemp
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import KernelPCA
+from sklearn.feature_selection import VarianceThreshold
 from sklearn.pipeline import FeatureUnion
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.preprocessing import FunctionTransformer, PowerTransformer
 
 from disable_cv import DisabledCV
 from experiments_settings import DATASETS_FILES, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from data_preprocessor import build_data_preprocessor
+from data_preprocessor import build_data_preprocessor, build_column_transformer
 from imblearn.over_sampling import BorderlineSMOTE  # choose the least common samples to duplicate (could perform better
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
@@ -52,20 +53,21 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
                             ('pca_linear', KernelPCA(kernel='linear')),
                             ('pca_rbf', KernelPCA(kernel='rbf'))])
 
-    cachedir1, cachedir2 = mkdtemp(), mkdtemp()
-    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X, memory=cachedir1)),
+    cachedir = mkdtemp()
+    pipeline = Pipeline(steps=[('ct', build_column_transformer(X)),
+                               ('vt', VarianceThreshold()),
+                               ('pt', PowerTransformer()),
                                ('pca', pca_aug),
-                               ('smote', BorderlineSMOTE),
+                               ('smote', BorderlineSMOTE()),
                                ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
-                        memory=cachedir2)
-    grid_params = {"fs": [fs], "clf": [clf], "fs__k": k}
+                        memory=cachedir)
+    grid_params = {"fs": [fs], "clf": [clf], "fs__k": [k]}
     if isinstance(cv, StratifiedKFold):
-        gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit='roc_auc', verbose=2, n_jobs=N_JOBS)
+        gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
     else:
-        gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit='roc_auc', verbose=2,
-                           n_jobs=N_JOBS)
+        gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y, clf__leave_out_mode=True)
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
@@ -74,7 +76,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
     res_df['learning_algorithm'] = res_df['learning_algorithm'].map(lambda x: x + '_Aug')
     res_df.to_csv(log_filename)
 
-    rmtree(cachedir1), rmtree(cachedir2)
+    rmtree(cachedir)
     return log_filename
 
 
@@ -86,7 +88,7 @@ def extract_best_settings_from_results(results_file_name, dataset_name):
     best_settings = gc.iloc[gc['test_roc_auc'].argmax()][[
         'learning_algorithm', 'filtering_algorithm', 'n_selected_features']]
     fs = next((x for x in WRAPPED_FEATURES_SELECTORS if x.score_func.__name__ == best_settings['filtering_algorithm']))
-    clf = next((x for x in WRAPPED_MODELS if fs.clf_name_ == best_settings['learning_algorithm']))
+    clf = next((x for x in WRAPPED_MODELS if x.clf_name_ == best_settings['learning_algorithm']))
     k = best_settings['n_selected_features']
     return fs, clf, k
 
