@@ -12,9 +12,8 @@ LABEL_COL = 'y'
 with_index = False
 
 sk_list = ['data/raw/scikit-feature/ALLAML.mat',
-           #'data/raw/scikit-feature/arcene.mat',
            'data/raw/scikit-feature/BASEHOCK.mat',
-           'data/raw/scikit-feature/Carcinom.mat',
+           'data/raw/scikit-feature/Carcinom.mat', # missing
            'data/raw/scikit-feature/CLL-SUB-111.mat',
            'data/raw/scikit-feature/COIL20.mat']
 
@@ -28,10 +27,9 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
                      'data/raw/bioconductor/ayeastCC.csv',
                      'data/raw/bioconductor/bcellViper.csv',
                      'data/raw/bioconductor/bladderbatch.csv',
-                     #'data/raw/bioconductor/breastCancerVDX.csv',
+                     'data/raw/bioconductor/breastCancerVDX.csv',
                      'data/raw/bioconductor/CLL.csv',
                      'data/raw/bioconductor/curatedOvarianData.csv',
-                     'data/raw/bioconductor/leukemiasEset.csv',
                      ]
 
 microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',

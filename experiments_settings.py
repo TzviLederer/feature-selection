@@ -18,6 +18,6 @@ WRAPPED_FEATURES_SELECTORS = [WrappedSelectKBest(score_func=joblib.Memory(mkdtem
 KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 
 DATASETS_FILES = list(map(str, Path('data/preprocessed').glob('*.csv')))
-OVERRIDE_LOGS = True
+OVERRIDE_LOGS = False
 
 N_JOBS = 16
