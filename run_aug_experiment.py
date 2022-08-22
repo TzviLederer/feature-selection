@@ -37,8 +37,7 @@ class DataPreprocessorWrapper(BaseEstimator):
         return self
 
     def transform(self, X, y=None, **kwargs):
-        self.estimator.transform(X, **kwargs)
-        return self
+        return self.estimator.transform(X, **kwargs)
 
     def get_feature_names_out(self, **kwargs):
         return self.estimator.get_feature_names_out(**kwargs)

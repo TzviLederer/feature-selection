@@ -22,4 +22,4 @@ KS = [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 50, 100]
 DATASETS_FILES = list(map(str, Path('data/preprocessed').glob('*.csv')))
 OVERRIDE_LOGS = False
 
-N_JOBS = 16
+N_JOBS = 1
