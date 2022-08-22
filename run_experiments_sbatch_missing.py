@@ -41,7 +41,7 @@ missing_experiments = [['./data/preprocessed/ALL.csv', poly_svm_fs_New],
        ['./data/preprocessed/curatedOvarianData.csv', svm_fs_New]]
 
 
-def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
+def run_experiment(logs_dir='sbatch_logs_missing', overwrite_logs=True):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
     filename, fs = missing_experiments[task_id]
