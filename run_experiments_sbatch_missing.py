@@ -27,18 +27,18 @@ from feature_selectors import *
 # patch_sklearn()
 
 
-missing_experiments = [['ALL.csv', poly_svm_fs_New],
-       ['BASEHOCK.csv', poly_svm_fs],
-       ['CLL.csv', grey_wolf_fs_New],
-       ['CLL.csv', poly_svm_fs],
-       ['CLL.csv', poly_svm_fs_New],
-       ['CLL.csv', rbf_svm_fs],
-       ['CLL.csv', svm_fs_New],
-       ['Lymphoma.csv', poly_svm_fs_New],
-       ['breastCancerVDX.csv', grey_wolf_fs_New],
-       ['breastCancerVDX.csv', poly_svm_fs],
-       ['curatedOvarianData.csv', rbf_svm_fs_New],
-       ['curatedOvarianData.csv', svm_fs_New]]
+missing_experiments = [['./data/preprocessed/ALL.csv', poly_svm_fs_New],
+       ['./data/preprocessed/BASEHOCK.csv', poly_svm_fs],
+       ['./data/preprocessed/CLL.csv', grey_wolf_fs_New],
+       ['./data/preprocessed/CLL.csv', poly_svm_fs],
+       ['./data/preprocessed/CLL.csv', poly_svm_fs_New],
+       ['./data/preprocessed/CLL.csv', rbf_svm_fs],
+       ['./data/preprocessed/CLL.csv', svm_fs_New],
+       ['./data/preprocessed/Lymphoma.csv', poly_svm_fs_New],
+       ['./data/preprocessed/breastCancerVDX.csv', grey_wolf_fs_New],
+       ['./data/preprocessed/breastCancerVDX.csv', poly_svm_fs],
+       ['./data/preprocessed/curatedOvarianData.csv', rbf_svm_fs_New],
+       ['./data/preprocessed/curatedOvarianData.csv', svm_fs_New]]
 
 
 def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
