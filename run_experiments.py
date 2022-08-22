@@ -51,13 +51,11 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
     cachedir = mkdtemp()
-    pipeline = Pipeline(steps=[('ct', build_column_transformer(X)),
-                               ('vt', VarianceThreshold()),
-                               ('pt', PowerTransformer()),
+    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
                                ('fs', 'passthrough'),
                                ('clf', 'passthrough')],
                         memory=cachedir)
-    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
+    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS[:1], "fs__k": KS[:1], "clf": WRAPPED_MODELS[:1]}
     if isinstance(cv, StratifiedKFold):
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
@@ -76,7 +74,7 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
 
 
 def get_dataset_and_experiment_params(filename):
-    df = pd.read_csv(filename)
+    df = pd.read_csv(filename)[:5]
     cv = get_cv(df)
     print(str(cv))
     # check if the number of sample in each class is less than fold number
@@ -108,5 +106,5 @@ def build_log_dataframe(gcv, base_details):
 
 
 if __name__ == '__main__':
-    run_all(overwrite_logs=OVERRIDE_LOGS)
-    # run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='results')
+    # run_all(overwrite_logs=OVERRIDE_LOGS)
+    run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='results')

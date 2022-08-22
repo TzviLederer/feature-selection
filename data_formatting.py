@@ -13,7 +13,7 @@ with_index = False
 
 sk_list = ['data/raw/scikit-feature/ALLAML.mat',
            'data/raw/scikit-feature/BASEHOCK.mat',
-           'data/raw/scikit-feature/Carcinom.mat', # missing
+           'data/raw/scikit-feature/Carcinom.mat',
            'data/raw/scikit-feature/CLL-SUB-111.mat',
            'data/raw/scikit-feature/COIL20.mat']
 
@@ -32,24 +32,28 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
                      'data/raw/bioconductor/curatedOvarianData.csv',
                      ]
 
-microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM3_ESM/CSS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM4_ESM/FS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM2_ESM/CS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM1_ESM/CBH.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM6_ESM/BP.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM8_ESM/PDX.csv']
+microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv']
 
-datamicroarray_list = {f'data/raw/datamicroarray/{f.name}' for f in Path('data/raw/datamicroarray/').glob('*.csv') if 'inputs' in f.name}
+datamicroarray_list = ['data/raw/datamicroarray/borovecki_inputs.csv',
+                       'data/raw/datamicroarray/christensen_inputs.csv',
+                       'data/raw/datamicroarray/golub_inputs.csv',
+                       'data/raw/datamicroarray/gravier_inputs.csv',
+                       'data/raw/datamicroarray/khan_inputs.csv',
+                       'data/raw/datamicroarray/pomeroy_inputs.csv',
+                       'data/raw/datamicroarray/shipp_inputs.csv',
+                       'data/raw/datamicroarray/singh_inputs.csv',
+                       'data/raw/datamicroarray/sorlie_inputs.csv',
+                       'data/raw/datamicroarray/subramanian_inputs.csv',
+                       'data/raw/datamicroarray/west_inputs.csv',
+                       ]
 
 
 def process_all(output_folder):
     os.makedirs(output_folder, exist_ok=True)
-    #process_files(microbiomic_list, preprocess_microbiomic, output_folder),
-    #process_files(bioconductor_list, preprocess_bioconductor, output_folder),
-    #process_files(arff_list, preprocess_arff, output_folder),
-    #process_files(sk_list, preprocess_sk, output_folder)
+    process_files(microbiomic_list, preprocess_microbiomic, output_folder),
+    process_files(bioconductor_list, preprocess_bioconductor, output_folder),
+    process_files(arff_list, preprocess_arff, output_folder),
+    process_files(sk_list, preprocess_sk, output_folder)
     process_files(datamicroarray_list, preprocess_datamicroarray, output_folder)
 
 
