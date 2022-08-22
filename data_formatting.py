@@ -13,7 +13,7 @@ with_index = False
 
 sk_list = ['data/raw/scikit-feature/ALLAML.mat',
            'data/raw/scikit-feature/BASEHOCK.mat',
-           'data/raw/scikit-feature/Carcinom.mat', # missing
+           'data/raw/scikit-feature/Carcinom.mat',
            'data/raw/scikit-feature/CLL-SUB-111.mat',
            'data/raw/scikit-feature/COIL20.mat']
 
@@ -32,14 +32,20 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
                      'data/raw/bioconductor/curatedOvarianData.csv',
                      ]
 
-microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM7_ESM/PBS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM3_ESM/CSS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM4_ESM/FS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM2_ESM/CS.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM1_ESM/CBH.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM6_ESM/BP.csv',
-                    'data/raw/microbiomic/40168_2013_11_MOESM8_ESM/PDX.csv']
+microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv']
+
+datamicroarray_list = ['data/raw/datamicroarray/borovecki_inputs.csv',
+                       'data/raw/datamicroarray/christensen_inputs.csv',
+                       'data/raw/datamicroarray/golub_inputs.csv',
+                       'data/raw/datamicroarray/gravier_inputs.csv',
+                       'data/raw/datamicroarray/khan_inputs.csv',
+                       'data/raw/datamicroarray/pomeroy_inputs.csv',
+                       'data/raw/datamicroarray/shipp_inputs.csv',
+                       'data/raw/datamicroarray/singh_inputs.csv',
+                       'data/raw/datamicroarray/sorlie_inputs.csv',
+                       'data/raw/datamicroarray/subramanian_inputs.csv',
+                       'data/raw/datamicroarray/west_inputs.csv',
+                       ]
 
 
 def process_all(output_folder):
@@ -48,6 +54,7 @@ def process_all(output_folder):
     process_files(bioconductor_list, preprocess_bioconductor, output_folder),
     process_files(arff_list, preprocess_arff, output_folder),
     process_files(sk_list, preprocess_sk, output_folder)
+    process_files(datamicroarray_list, preprocess_datamicroarray, output_folder)
 
 
 def process_files(files, processor, output_folder):
@@ -58,6 +65,13 @@ def process_files(files, processor, output_folder):
 
 def build_output_path(input_path, output_folder):
     return f'{output_folder}/{"".join(Path(input_path).name.split(".")[:-1])}.csv'
+
+
+def preprocess_datamicroarray(input_path, output_path):
+    df = pd.read_csv(input_path, header=None)
+    df[LABEL_COL] = pd.read_csv(f'{input_path.split("_")[0]}_outputs.csv', header=None)[0]
+    df.columns = [str(c) for c in df.columns]
+    df.to_csv(output_path, index=with_index)
 
 
 def preprocess_sk(input_path, output_path):
