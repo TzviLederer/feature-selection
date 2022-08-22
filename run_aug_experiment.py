@@ -7,6 +7,7 @@ from tempfile import mkdtemp
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.decomposition import KernelPCA
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import FunctionTransformer
@@ -19,6 +20,29 @@ from imblearn.over_sampling import BorderlineSMOTE  # choose the least common sa
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
+
+
+class DataPreprocessorWrapper(BaseEstimator):
+    def __init__(self, estimator):
+        """
+        Needed because imblearn do not excepts sklearn pipelines inside its own pipeline
+        """
+
+        self.estimator = estimator
+        self.feature_names_in_ = None
+
+    def fit(self, X, y=None, **kwargs):
+        self.estimator.fit(X, y)
+        self.feature_names_in_ = self.estimator.feature_names_in_
+        return self
+
+    def transform(self, X, y=None, **kwargs):
+        self.estimator.transform(X, y)
+        return self
+
+    def get_feature_names_out(self, **kwargs):
+        return self.estimator.get_feature_names_out(**kwargs)
+
 
 
 def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
@@ -53,7 +77,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
                             ('pca_rbf', KernelPCA(kernel='rbf'))])
 
     cachedir = mkdtemp()
-    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
+    pipeline = Pipeline(steps=[('dp', DataPreprocessorWrapper(build_data_preprocessor(X))),
                                ('pca', pca_aug),
                                ('smote', BorderlineSMOTE()),
                                ('fs', 'passthrough'),
