@@ -12,6 +12,8 @@ WRAPPED_MODELS = [WrappedGaussianNB(),
 
 FEATURES_SELECTORS = [select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs,
                       svm_fs, svm_fs_New,
+                      rbf_svm_fs, rbf_svm_fs_New,
+                      poly_svm_fs, poly_svm_fs_New,
                       grey_wolf_fs, grey_wolf_fs_New]
 WRAPPED_FEATURES_SELECTORS = [WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), verbose=0).cache(fs)) for fs in FEATURES_SELECTORS]
 
