@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.svm import SVC
 
 
-def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
+def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear'):
     X = np.array(X)
     y = np.array(y)
 
@@ -13,10 +13,6 @@ def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
     r = []
 
     while s:
-        if verbose > 0:
-            print('\r  ', end='')
-            print(f'\r{len(s)}', end='')
-
         svm.fit(X_0[:, s], y)
 
         alphas = np.zeros(len(X))
@@ -35,15 +31,15 @@ def svm_fs(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0):
     return 1 - t / max(t)
 
 
-def rbf_svm_fs(X, y, svm_max_iter=10_000_000, verbose=0):
-    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='rbf', verbose=verbose)
+def rbf_svm_fs(X, y, svm_max_iter=10_000_000):
+    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='rbf')
 
 
-def poly_svm_fs(X, y, svm_max_iter=10_000_000, verbose=0):
-    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='poly', verbose=verbose)
+def poly_svm_fs(X, y, svm_max_iter=10_000_000):
+    return svm_fs(X, y, svm_max_iter=svm_max_iter, kernel='poly')
 
 
-def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_frac=0.1):
+def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', step_frac=0.1):
     X = np.array(X)
     y = np.array(y)
 
@@ -54,10 +50,6 @@ def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_f
     r = []
 
     while s:
-        if verbose > 0:
-            print('\r  ', end='')
-            print(f'\r{len(s)}', end='')
-
         svm.fit(X_0[:, s], y)
 
         alphas = np.zeros(len(X))
@@ -77,9 +69,9 @@ def svm_fs_New(X, y, svm_max_iter=10_000_000, kernel='linear', verbose=0, step_f
     return 1 - t / max(t)
 
 
-def rbf_svm_fs_New(X, y, svm_max_iter=10_000_000, verbose=0):
-    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='rbf', verbose=verbose)
+def rbf_svm_fs_New(X, y, svm_max_iter=10_000_000):
+    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='rbf')
 
 
-def poly_svm_fs_New(X, y, svm_max_iter=10_000_000, verbose=0):
-    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='poly', verbose=verbose)
+def poly_svm_fs_New(X, y, svm_max_iter=10_000_000):
+    return svm_fs_New(X, y, svm_max_iter=svm_max_iter, kernel='poly')
