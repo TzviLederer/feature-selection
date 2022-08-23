@@ -79,7 +79,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
 
 def extract_best_settings_from_results(results_file_name, dataset_name):
     df = pd.read_csv(results_file_name)
-    df = df[(df['dataset'] == dataset_name)]
+    df = df[(df['dataset'] == dataset_name) & ~(df['filtering_algorithm'].str.endswith('_Aug'))]
     gc = df.groupby(['learning_algorithm', 'filtering_algorithm', 'n_selected_features']).mean(
         'test_roc_auc').reset_index()
     best_settings = gc.iloc[gc['test_roc_auc'].argmax()][[
