@@ -22,7 +22,7 @@ from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
 
 
-def run_all(results_file_name, logs_dir='logs_aug2', overwrite_logs=False):
+def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
         datasets = list(pd.read_csv(results_file_name).dataset.unique())
