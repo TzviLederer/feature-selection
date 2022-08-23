@@ -32,7 +32,7 @@ wrapped_select_fdr_fs = WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), v
 def run_experiment(logs_dir='sbatch_logs', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
-    datasets_files = ['ALL.csv', 'curatedOvarianData.csv', 'CLL.csv', 'CNS.csv', 'pomeroy_inputs.csv']
+    datasets_files = ['./data/preprocessed/ALL.csv', './data/preprocessed/curatedOvarianData.csv', './data/preprocessed/CLL.csv', './data/preprocessed/CNS.csv', './data/preprocessed/pomeroy_inputs.csv']
     filename = datasets_files[task_id]
     feature_selectors = [wrapped_select_fdr_fs]
     print(f'Start Experiment, Dataset: {filename}')
