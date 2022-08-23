@@ -1,20 +1,16 @@
-import json
 import os
 import sys
 import time
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
-
-import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-
 from data_formatting import LABEL_COL
 from disable_cv import DisabledCV
 from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, \
     WRAPPED_MODELS
-from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
 from scoring_handlers import get_scoring
@@ -61,7 +57,7 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
     else:
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__leave_out_mode=True)
+        gcv.fit(X, y, clf__cv=get_cv(X))
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],
@@ -106,4 +102,3 @@ def build_log_dataframe(gcv, base_details):
 
 if __name__ == '__main__':
     run_all(overwrite_logs=OVERRIDE_LOGS)
-    # run_experiment('data/preprocessed/BASEHOCK.csv', logs_dir='results')

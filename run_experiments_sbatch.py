@@ -1,25 +1,16 @@
-import itertools
-import json
 import os
 import sys
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 from itertools import product
-
 import joblib
-import numpy as np
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 from run_experiments import get_dataset_and_experiment_params, build_log_dataframe
-
-from data_formatting import LABEL_COL
 from disable_cv import DisabledCV
-from experiments_settings import DATASETS_FILES, KS, N_JOBS, OVERRIDE_LOGS, WRAPPED_MODELS
-from sklearn.model_selection import StratifiedKFold, GridSearchCV, ShuffleSplit
+from experiments_settings import DATASETS_FILES, KS, N_JOBS, WRAPPED_MODELS
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
 from data_preprocessor import build_data_preprocessor
-from scoring_handlers import get_scoring
 from wrapped_estimators import WrappedSelectKBest
 from wrapped_estimators.utils import get_cv
 from feature_selectors import *
@@ -35,7 +26,7 @@ FEATURES_SELECTORS = [[select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs],
 WRAPPED_FEATURES_SELECTORS = [[WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), verbose=0).cache(fs)) for fs in fss] for fss in FEATURES_SELECTORS]
 
 
-def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
+def run_experiment(logs_dir='sbatch_logs', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
     if len(sys.argv) == 1:
@@ -69,7 +60,7 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
     else:
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__leave_out_mode=True)
+        gcv.fit(X, y, clf__cv=get_cv(X))
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],
