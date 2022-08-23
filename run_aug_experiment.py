@@ -1,13 +1,10 @@
-import json
 import os
 import sys
 from pathlib import Path
 from shutil import rmtree
 from tempfile import mkdtemp
 
-import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator
 from sklearn.decomposition import KernelPCA
 from sklearn.pipeline import FeatureUnion
 from sklearn.preprocessing import FunctionTransformer
