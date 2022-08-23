@@ -27,7 +27,8 @@ def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
     if len(sys.argv) == 1:
-        datasets_files = list(pd.read_csv(results_file_name).dataset.unique())
+        datasets = list(pd.read_csv(results_file_name).dataset.unique())
+        datasets_files = [name for arg in datasets for name in DATASETS_FILES if arg in name]
     else:
         datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
     dataset_file = datasets_files[task_id]
