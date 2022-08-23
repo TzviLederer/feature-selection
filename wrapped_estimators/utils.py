@@ -15,8 +15,7 @@ def fit_with_time(self, X, y, **kwargs):
     return return_value
 
 
-def fit_for_leave_out(self, X, y, **kwargs):
-    cv = get_cv(X)
+def fit_for_leave_out(self, X, y, cv=None, **kwargs):
     y_pred_proba, mean_fit_time, mean_inference_time = cross_val_predict_lpo(self, X, y, cv=cv)
     self.metrics = calculate_metrics(y, y_pred_proba, multi=(len(np.unique(y)) > 2))
     self.fit_time = mean_fit_time

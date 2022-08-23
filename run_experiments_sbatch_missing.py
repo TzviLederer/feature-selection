@@ -61,7 +61,7 @@ def run_experiment(logs_dir='sbatch_logs', overwrite_logs=False):
     else:
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__leave_out_mode=True)
+        gcv.fit(X, y, clf__leave_out_mode=get_cv(X))
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],

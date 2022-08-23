@@ -13,7 +13,7 @@ class WrappedLogisticRegression(LogisticRegression):
         self.clf_name_ = 'LogisticRegression'
 
     def fit_modified(self, X, y, leave_out_mode=False, **kwargs):
-        return fit_for_leave_out(self, X, y, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
+        return fit_for_leave_out(self, X, y, cv=leave_out_mode, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
 
 
 WrappedLogisticRegression.__init__.__signature__ = inspect.signature(LogisticRegression.__init__)

@@ -17,6 +17,7 @@ from imblearn.over_sampling import BorderlineSMOTE  # choose the least common sa
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
+from wrapped_estimators.utils import get_cv
 
 
 def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
@@ -66,7 +67,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
     else:
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__leave_out_mode=True)
+        gcv.fit(X, y, clf__leave_out_mode=get_cv(X))
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],

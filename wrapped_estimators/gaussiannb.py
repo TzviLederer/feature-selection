@@ -13,7 +13,7 @@ class WrappedGaussianNB(GaussianNB):
         self.clf_name_ = 'GaussianNB'
 
     def fit_modified(self, X, y, leave_out_mode=False, **kwargs):
-        return fit_for_leave_out(self, X, y, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
+        return fit_for_leave_out(self, X, y, cv=leave_out_mode, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
 
 
 WrappedGaussianNB.__init__.__signature__ = inspect.signature(GaussianNB.__init__)

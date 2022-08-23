@@ -13,7 +13,7 @@ class WrappedRandomForestClassifier(RandomForestClassifier):
         self.clf_name_ = 'RandomForestClassifier'
 
     def fit_modified(self, X, y, leave_out_mode=False, **kwargs):
-        return fit_for_leave_out(self, X, y, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
+        return fit_for_leave_out(self, X, y, cv=leave_out_mode, **kwargs) if leave_out_mode else fit_with_time(self, X, y, **kwargs)
 
 
 WrappedRandomForestClassifier.__init__.__signature__ = inspect.signature(RandomForestClassifier.__init__)
