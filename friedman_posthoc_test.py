@@ -47,4 +47,4 @@ def friedman_posthoc_test(results_csv_path, alpha=0.05, metric_col='test_roc_auc
 
 
 if __name__ == '__main__':
-    friedman_posthoc_test('unified_df.csv')
+    friedman_posthoc_test('all_exp_df.csv')
