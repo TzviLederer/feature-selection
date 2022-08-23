@@ -14,9 +14,8 @@ def get_common_experiments(df):
     return df[df.set_index(cols).index.isin(gb[gb == gb.max()].index)]
 
 
-def friedman_posthoc_test(results_csv_path, alpha=0.05, metric_col='test_roc_auc'):
-    df = pd.read_csv(results_csv_path)
-    df = get_common_experiments(df)
+def friedman_posthoc_test(results_df, alpha=0.05, metric_col='test_roc_auc'):
+    df = get_common_experiments(results_df)
     experiment_index_cols = ['filtering_algorithm', 'dataset', 'learning_algorithm', 'n_selected_features']
     mean_df = df.groupby(experiment_index_cols).mean(metric_col).reset_index().sort_values(experiment_index_cols)
     metrics_df = mean_df.groupby(['filtering_algorithm'])[metric_col].apply(list).reset_index()
@@ -47,4 +46,5 @@ def friedman_posthoc_test(results_csv_path, alpha=0.05, metric_col='test_roc_auc
 
 
 if __name__ == '__main__':
-    friedman_posthoc_test('all_exp_df.csv')
+    df = pd.read_csv('all_exp_df.csv')
+    friedman_posthoc_test(df[~df['filtering_algorithm'].str.endswith('_Aug')])

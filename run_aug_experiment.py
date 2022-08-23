@@ -70,7 +70,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],
                                        'cv_method': str(cv)})
-    res_df['learning_algorithm'] = res_df['learning_algorithm'].map(lambda x: x + '_Aug')
+    res_df['filtering_algorithm'] = res_df['filtering_algorithm'].map(lambda x: x + '_Aug')
     res_df.to_csv(log_filename)
 
     rmtree(cachedir)
