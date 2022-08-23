@@ -35,7 +35,7 @@ FEATURES_SELECTORS = [[select_fdr_fs, mrmr_fs, rfe_svm_fs, reliefF_fs],
 WRAPPED_FEATURES_SELECTORS = [[WrappedSelectKBest(score_func=joblib.Memory(mkdtemp(), verbose=0).cache(fs)) for fs in fss] for fss in FEATURES_SELECTORS]
 
 
-def run_experiment(logs_dir='sbatch_logs', overwrite_logs=True):
+def run_experiment(logs_dir='sbatch_logs', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     task_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))
     if len(sys.argv) == 1:

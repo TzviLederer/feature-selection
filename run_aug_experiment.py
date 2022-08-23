@@ -46,7 +46,7 @@ class DataPreprocessorWrapper(BaseEstimator):
 def run_all(results_file_name, logs_dir='logs_aug2', overwrite_logs=False):
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
-        datasets_files = DATASETS_FILES
+        datasets_files = list(pd.read_csv(results_file_name).dataset.unique())
     else:
         datasets_files = [name for arg in sys.argv[1:] for name in DATASETS_FILES if arg in name]
 

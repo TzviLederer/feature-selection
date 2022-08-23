@@ -12,7 +12,7 @@ LABEL_COL = 'y'
 with_index = False
 
 sk_list = ['data/raw/scikit-feature/ALLAML.mat',
-           'data/raw/scikit-feature/BASEHOCK.mat',
+           # 'data/raw/scikit-feature/BASEHOCK.mat',
            'data/raw/scikit-feature/Carcinom.mat',
            'data/raw/scikit-feature/CLL-SUB-111.mat',
            'data/raw/scikit-feature/COIL20.mat']
@@ -27,7 +27,7 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
                      'data/raw/bioconductor/ayeastCC.csv',
                      'data/raw/bioconductor/bcellViper.csv',
                      'data/raw/bioconductor/bladderbatch.csv',
-                     'data/raw/bioconductor/breastCancerVDX.csv',
+                     # 'data/raw/bioconductor/breastCancerVDX.csv',
                      'data/raw/bioconductor/CLL.csv',
                      'data/raw/bioconductor/curatedOvarianData.csv',
                      ]
@@ -35,16 +35,16 @@ bioconductor_list = ['data/raw/bioconductor/ALL.csv',
 microbiomic_list = ['data/raw/microbiomic/40168_2013_11_MOESM5_ESM/FSH.csv']
 
 datamicroarray_list = ['data/raw/datamicroarray/borovecki_inputs.csv',
-                       'data/raw/datamicroarray/christensen_inputs.csv',
-                       'data/raw/datamicroarray/golub_inputs.csv',
+                       # 'data/raw/datamicroarray/christensen_inputs.csv',
+                       # 'data/raw/datamicroarray/golub_inputs.csv',
                        'data/raw/datamicroarray/gravier_inputs.csv',
                        'data/raw/datamicroarray/khan_inputs.csv',
-                       'data/raw/datamicroarray/pomeroy_inputs.csv',
+                       # 'data/raw/datamicroarray/pomeroy_inputs.csv',
                        'data/raw/datamicroarray/shipp_inputs.csv',
                        'data/raw/datamicroarray/singh_inputs.csv',
                        'data/raw/datamicroarray/sorlie_inputs.csv',
-                       'data/raw/datamicroarray/subramanian_inputs.csv',
-                       'data/raw/datamicroarray/west_inputs.csv',
+                       # 'data/raw/datamicroarray/subramanian_inputs.csv',
+                       # 'data/raw/datamicroarray/west_inputs.csv',
                        ]
 
 
