@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.compose import make_column_transformer
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.impute import SimpleImputer
@@ -16,3 +17,24 @@ def build_data_preprocessor(X, memory=None):
         verbose_feature_names_out=False)
 
     return make_pipeline(column_transformer, VarianceThreshold(), PowerTransformer(), memory=memory)
+
+
+class DataPreprocessorWrapper(BaseEstimator):
+    def __init__(self, estimator):
+        """
+        Needed because imblearn do not excepts sklearn pipelines inside its own pipeline
+        """
+
+        self.estimator = estimator
+        self.feature_names_in_ = None
+
+    def fit(self, X, y=None, **kwargs):
+        self.estimator.fit(X, y)
+        self.feature_names_in_ = self.estimator.feature_names_in_
+        return self
+
+    def transform(self, X, y=None, **kwargs):
+        return self.estimator.transform(X, **kwargs)
+
+    def get_feature_names_out(self, **kwargs):
+        return self.estimator.get_feature_names_out(**kwargs)

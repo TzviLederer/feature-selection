@@ -15,11 +15,9 @@ from sklearn.preprocessing import FunctionTransformer
 from disable_cv import DisabledCV
 from experiments_settings import DATASETS_FILES, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from data_preprocessor import build_data_preprocessor
+from data_preprocessor import build_data_preprocessor, DataPreprocessorWrapper
 from imblearn.over_sampling import BorderlineSMOTE  # choose the least common samples to duplicate (could perform better
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
-
-from run_aug_experiment import DataPreprocessorWrapper
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
 
 

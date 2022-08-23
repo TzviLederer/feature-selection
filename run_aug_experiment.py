@@ -15,32 +15,11 @@ from sklearn.preprocessing import FunctionTransformer
 from disable_cv import DisabledCV
 from experiments_settings import DATASETS_FILES, N_JOBS, OVERRIDE_LOGS, WRAPPED_FEATURES_SELECTORS, WRAPPED_MODELS
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from data_preprocessor import build_data_preprocessor
+from data_preprocessor import build_data_preprocessor, DataPreprocessorWrapper
 from imblearn.over_sampling import BorderlineSMOTE  # choose the least common samples to duplicate (could perform better
 from imblearn.pipeline import Pipeline  # IMPORTANT SO THAT SMOTE (sampler) WILL RUN ONLY ON FIT (train)
 
 from run_experiments import build_log_dataframe, get_dataset_and_experiment_params
-
-
-class DataPreprocessorWrapper(BaseEstimator):
-    def __init__(self, estimator):
-        """
-        Needed because imblearn do not excepts sklearn pipelines inside its own pipeline
-        """
-
-        self.estimator = estimator
-        self.feature_names_in_ = None
-
-    def fit(self, X, y=None, **kwargs):
-        self.estimator.fit(X, y)
-        self.feature_names_in_ = self.estimator.feature_names_in_
-        return self
-
-    def transform(self, X, y=None, **kwargs):
-        return self.estimator.transform(X, **kwargs)
-
-    def get_feature_names_out(self, **kwargs):
-        return self.estimator.get_feature_names_out(**kwargs)
 
 
 def run_all(results_file_name, logs_dir='logs_aug2', overwrite_logs=False):
