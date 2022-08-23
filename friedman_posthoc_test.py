@@ -5,27 +5,22 @@ import scikit_posthocs as sp
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+BASELINES_NAMES = ['select_fdr_fs', 'mrmr_fs', 'reliefF_fs', 'rfe_svm_fs']
+OUR_ALGORITHMS_NAMES = ['poly_svm_fs', 'poly_svm_fs_New', 'rbf_svm_fs', 'rbf_svm_fs_New', 'svm_fs', 'svm_fs_New','grey_wolf_fs' , 'grey_wolf_fs_New']
 
-def warning_incomplete_experiments(gb, metric_col):
-    bad_ds = gb[gb[metric_col].isna()].reset_index().groupby('dataset')['filtering_algorithm'].apply(list).reset_index()
-    for _, r in bad_ds.iterrows():
-        print(
-            f'Warning: Ignored Dataset "{r["dataset"]}" because its missing "{metric_col}" metric for {r["filtering_algorithm"]}')
-    return bad_ds.dataset
+def get_common_experiments(df):
+    cols = ['dataset', 'learning_algorithm', 'n_selected_features']
+    gb = df.groupby(cols)['filtering_algorithm'].apply(list).apply(len)
+    return df[df.set_index(cols).index.isin(gb[gb == gb.max()].index)]
 
 
 def friedman_posthoc_test(results_csv_path, alpha=0.05, metric_col='test_roc_auc'):
     df = pd.read_csv(results_csv_path)
-    df = df[df.filtering_algorithm.isin(['fdr', 'mrmr', 'reliefF', 'rfe_svm'])]  # TODO: Fix incomplete experiments
+    df = get_common_experiments(df)
     experiment_index_cols = ['filtering_algorithm', 'dataset', 'learning_algorithm', 'n_selected_features']
-    mean_df = df.groupby(experiment_index_cols).mean(metric_col).reset_index().sort_values([experiment_index_cols])
-
-    warn_datasets = warning_incomplete_experiments(mean_df, metric_col)
-    mean_df = mean_df[~mean_df.dataset.isin(warn_datasets)] # TODO: Fix incomplete experiments
-
-    metrics_df = mean_df.groupby('filtering_algorithm')[metric_col].apply(list).reset_index()
-
-    metrics_df[metric_col] = metrics_df[metric_col].map(lambda x: x[:10])  # TODO: Fix incomplete experiments
+    mean_df = df.groupby(experiment_index_cols).mean(metric_col).reset_index().sort_values(experiment_index_cols)
+    metrics_df = mean_df.groupby(['filtering_algorithm'])[metric_col].apply(list).reset_index()
+    assert len(set(metrics_df[metric_col].map(len))) == 1, 'Should have same # of values per filtering algorithm'
 
     data = metrics_df[metric_col].to_list()
     _, p_value = ss.friedmanchisquare(*data)
@@ -35,9 +30,16 @@ def friedman_posthoc_test(results_csv_path, alpha=0.05, metric_col='test_roc_auc
         r = np.argwhere(posthoc_res.to_numpy() < alpha)
         groups = metrics_df['filtering_algorithm'].values
         metrics_means = mean_df.groupby(['filtering_algorithm'])[metric_col].mean()
-        for x, y in groups[r]:
-            if metrics_means[x] > metrics_means[y]:
-                print(f'algorithm {x} is significantly better than algorithm {y} in terms of {metric_col}')
+
+        res = pd.DataFrame([(x, y) for x, y in groups[r] if metrics_means[x] > metrics_means[y]], columns=['b', 'w'])
+        signif_better = res.groupby('b')['w'].apply(list).reset_index().to_numpy()
+        for x, y in signif_better:
+            print(f'algorithm {x} is significantly better than algorithms {set(y)} in terms of {metric_col}')
+        print('---------------------')
+        for x, y in signif_better:
+            if x in OUR_ALGORITHMS_NAMES:
+                print(f'algorithm {x} is significantly better than baseline algorithms {set(y) & set(BASELINES_NAMES)} in terms of {metric_col}')
+        plt.figure(figsize=(20, 15))
         sns.heatmap(posthoc_res, xticklabels=groups, yticklabels=groups, annot=True)
         plt.show()
     else:
