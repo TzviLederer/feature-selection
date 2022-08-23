@@ -1,12 +1,8 @@
 import os
-import re
 from pathlib import Path
-
-import numpy as np
 import pandas as pd
 import scipy.io
 from scipy.io import arff
-import asyncio
 
 LABEL_COL = 'y'
 with_index = False
