@@ -19,6 +19,7 @@ from wrapped_estimators.utils import get_cv
 
 
 def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
+    # execute 'run_experiment' over all dataset / datasets in run arguments
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
         datasets = list(pd.read_csv(results_file_name).dataset.unique())
@@ -34,6 +35,8 @@ def run_all(results_file_name, logs_dir='logs_aug', overwrite_logs=False):
 
 
 def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_logs=False):
+    # execute a single augumentation experiment (part 4) with the best setting for this dataset according to ROC_AUC
+    # results in the results file.
     dataset_name = Path(filename).name
     log_filename = f'{dataset_name[:-len(".csv")]}_aug_results.csv'
     if logs_dir:
@@ -44,33 +47,45 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
         print('Exists, skipping')
         return log_filename
 
+    # extract best settings
     fs, clf, k = extract_best_settings_from_results(results_file_name, dataset_name)
 
+    # build CV, scoring function, and X,y for the requested dataset
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
+
+    # Build the PCA augmentation required at the assignment - union of:
+    #   * original features
+    #   * PCA with linear kernel
+    #   * PCA with rbf kernel
     pca_aug = FeatureUnion([('identity', FunctionTransformer()),
                             ('pca_linear', KernelPCA(kernel='linear')),
                             ('pca_rbf', KernelPCA(kernel='rbf'))])
 
     cachedir = mkdtemp()
-    pipeline = Pipeline(steps=[('dp', DataPreprocessorWrapper(build_data_preprocessor(X))),
-                               ('fs', 'passthrough'),
-                               ('pca', pca_aug),
-                               ('smote', BorderlineSMOTE()),
-                               ('clf', 'passthrough')],
+    pipeline = Pipeline(steps=[('dp', DataPreprocessorWrapper(build_data_preprocessor(X))),  # wrapped preprocessor (explained at the wrapper description, required for using with imblearn pipeline)
+                               ('fs', 'passthrough'),  # use passthrough for original structure compatability
+                               ('pca', pca_aug),  # PCA augmentation
+                               ('smote', BorderlineSMOTE()),  # BorderlineSMOTE augmentation
+                               ('clf', 'passthrough')],  # use passthrough for original structure compatability
                         memory=cachedir)
-    grid_params = {"fs": [fs], "clf": [clf], "fs__k": [k]}
+    grid_params = {"fs": [fs], "clf": [clf], "fs__k": [k]}  # set params to best settings
     if isinstance(cv, StratifiedKFold):
+        # if SKF, use GridSearchCV "normally"
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
     else:
+        # if LPO, use GridSearchCV with DisableCV (no folding) - explain in DisableCV description
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__cv=get_cv(X))
+        gcv.fit(X, y, clf__cv=get_cv(X))  # pass real CV to the classifier for custom LPO fitting
+    # build log
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],
                                        'cv_method': str(cv)})
+    # add suffix
     res_df['filtering_algorithm'] = res_df['filtering_algorithm'].map(lambda x: x + '_Aug')
+    # save
     res_df.to_csv(log_filename)
 
     rmtree(cachedir)
@@ -78,6 +93,7 @@ def run_experiment(filename, results_file_name, logs_dir='logs_aug', overwrite_l
 
 
 def extract_best_settings_from_results(results_file_name, dataset_name):
+    # extract best setting according to ROC_AUC value for the given dataset from the experiments results
     df = pd.read_csv(results_file_name)
     df = df[(df['dataset'] == dataset_name) & ~(df['filtering_algorithm'].str.endswith('_Aug'))]
     gc = df.groupby(['learning_algorithm', 'filtering_algorithm', 'n_selected_features']).mean(

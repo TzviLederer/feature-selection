@@ -20,6 +20,7 @@ from wrapped_estimators.utils import get_cv
 
 
 def run_all(logs_dir='logs', overwrite_logs=False):
+    # execute 'run_experiment' over all dataset / datasets in run arguments
     os.makedirs(logs_dir, exist_ok=True)
     if len(sys.argv) == 1:
         datasets_files = DATASETS_FILES
@@ -33,6 +34,7 @@ def run_all(logs_dir='logs', overwrite_logs=False):
 
 
 def run_experiment(filename, logs_dir=None, overwrite_logs=True):
+    # execute a single dataset experiment (parts 2, 3)
     dataset_name = Path(filename).name
     log_filename = f'{dataset_name[:-len(".csv")]}_results_{int(time.time())}.csv'
     if logs_dir:
@@ -43,25 +45,30 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
         print('Exists, skipping')
         return log_filename
 
+    # build CV, scoring function, and X,y for the requested dataset
     X, y, cv, scoring = get_dataset_and_experiment_params(filename)
 
     cachedir = mkdtemp()
-    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),
-                               ('fs', 'passthrough'),
-                               ('clf', 'passthrough')],
+    pipeline = Pipeline(steps=[('dp', build_data_preprocessor(X)),  # preprocessor
+                               ('fs', 'passthrough'),  # feature selector - using passthrough to take it from grid
+                               ('clf', 'passthrough')], # classifier - using passthrough to take it from grid
                         memory=cachedir)
-    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS}
+    grid_params = {"fs": WRAPPED_FEATURES_SELECTORS, "fs__k": KS, "clf": WRAPPED_MODELS} # set grid for experiment
     if isinstance(cv, StratifiedKFold):
+        # if SKF, use GridSearchCV "normally"
         gcv = GridSearchCV(pipeline, grid_params, cv=cv, scoring=scoring, refit=False, verbose=2, n_jobs=N_JOBS)
         gcv.fit(X, y)
     else:
+        # if LPO, use GridSearchCV with DisableCV (no folding) - explain in DisableCV description
         gcv = GridSearchCV(pipeline, grid_params, cv=DisabledCV(), scoring=scoring, refit=False, verbose=2,
                            n_jobs=N_JOBS)
-        gcv.fit(X, y, clf__cv=get_cv(X))
+        gcv.fit(X, y, clf__cv=get_cv(X))  # pass real CV to the classifier for custom LPO fitting
+    # build log
     res_df = build_log_dataframe(gcv, {'dataset': dataset_name,
                                        'n_samples': X.shape[0],
                                        'n_features_org': X.shape[1],
                                        'cv_method': str(cv)})
+    # save
     res_df.to_csv(log_filename)
 
     rmtree(cachedir)
@@ -69,6 +76,8 @@ def run_experiment(filename, logs_dir=None, overwrite_logs=True):
 
 
 def get_dataset_and_experiment_params(filename):
+    # Given a path to CSV file, we load it, separate the features and label, label encode the label and build the
+    # relevant CV according to the assignment requirements, and the scoring function according to it.
     df = pd.read_csv(filename)
     cv = get_cv(df)
     print(str(cv))
@@ -82,11 +91,15 @@ def get_dataset_and_experiment_params(filename):
 
 
 def build_log_dataframe(gcv, base_details):
+    # This function extracts all relevant details fro the GridSearchCV results for logging in the assignment format,
+    # and based on our custom scoring formats.
     to_log = []
     for j, experiment in enumerate(gcv.cv_results_['params']):
         for i in range(gcv.n_splits_):
             fold_res = {k[len(f'split{i}_'):]: v[j] for k, v in gcv.cv_results_.items() if k.startswith(f'split{i}_')}
-            sf = {k[len('test_'):-len('_feature_prob')]: v for k, v in fold_res.items() if k.endswith('_feature_prob') and v > 0}
+            # selected features probabilities are passed through scoring by using 'feature_prob' suffix.
+            sf = {k[len('test_'):-len('_feature_prob')]: v for k, v in fold_res.items() if
+                  k.endswith('_feature_prob') and v > 0}
             sf = dict(sorted(sf.items(), key=lambda item: item[1], reverse=True))
             fold_res = {k: v for k, v in fold_res.items() if not k.endswith('_feature_prob')}
             to_log.append({**fold_res,
