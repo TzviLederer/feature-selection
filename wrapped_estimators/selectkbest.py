@@ -4,6 +4,7 @@ from wrapped_estimators.utils import fit_with_time
 
 
 class WrappedSelectKBest(SelectKBest):
+    # Wrapper for SelectKBest for fit time measuring
     def __init__(self, *args, **kwargs):
         SelectKBest.__init__(self, *args, **kwargs)
         self.org_fit = self.fit

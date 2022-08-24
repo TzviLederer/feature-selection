@@ -8,6 +8,7 @@ from sklearn.preprocessing import PowerTransformer, OrdinalEncoder
 
 
 def build_data_preprocessor(X, memory=None):
+    # builds the preprocessing pipeline suggested in the assignment
     numeric_transformer = SimpleImputer(missing_values=np.nan, strategy="mean")
     categorical_transformer = make_pipeline(SimpleImputer(missing_values=np.nan, strategy="constant"), OrdinalEncoder())
     column_transformer = make_column_transformer(
@@ -19,6 +20,11 @@ def build_data_preprocessor(X, memory=None):
 
 
 class DataPreprocessorWrapper(BaseEstimator):
+    # This is a basic wrapper for the preprocessing pipeline.
+    # We use it only at the augmentation experiments, because we use imblearn's pipeline
+    # which do not accept steps that are pipelines -> therefore we used the wrapper suggested in the assignment
+    # to "hide" the preprocessing pipeline as a simple estimator which imblearn's pipeline accepts.
+
     def __init__(self, estimator):
         """
         Needed because imblearn do not excepts sklearn pipelines inside its own pipeline

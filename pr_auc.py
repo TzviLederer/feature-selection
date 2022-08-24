@@ -10,6 +10,7 @@ def _pr_auc(y_true, y_score):
 
 
 def pr_auc(y_true, y_score):
+    # Implementation of PR-AUC metric with multiclass support
     classes = np.unique(y_true)
     n_classes = len(classes)
     if n_classes <= 2:

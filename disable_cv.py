@@ -2,6 +2,8 @@ import numpy as np
 
 
 class DisabledCV:
+    # https://stackoverflow.com/questions/44636370/scikit-learn-gridsearchcv-without-cross-validation-unsupervised-learning
+    # Fake CV used to disable CV in GridSearchCV (required for our implementation)
     def __init__(self):
         self.n_splits = 1
 

@@ -7,6 +7,7 @@ from scoring_handlers import calculate_metrics
 
 
 def fit_with_time(self, X, y, **kwargs):
+    # used in wrapper estimators to measure fit time
     start = time.time()
     return_value = self.org_fit(X, y, **kwargs)
     self.fit_time = time.time() - start
@@ -14,6 +15,9 @@ def fit_with_time(self, X, y, **kwargs):
 
 
 def fit_for_leave_out(self, X, y, cv=None, **kwargs):
+    # used in wrapper estimators for leave out CVs
+    # to calculate metrics like roc auc over LOO/LPO
+    # we perform cross validation while keeping the test y_proba and use all probas for metrics calculation at once.
     y_pred_proba, mean_fit_time, mean_inference_time = cross_val_predict_lpo(self, X, y, cv=cv)
     self.metrics = calculate_metrics(y, y_pred_proba, multi=(len(np.unique(y)) > 2))
     self.fit_time = mean_fit_time
@@ -22,6 +26,8 @@ def fit_for_leave_out(self, X, y, cv=None, **kwargs):
 
 
 def cross_val_predict_lpo(pipeline, X, y, cv):
+    # perform cross validation of leave p out cv
+    # return the test y_proba (for metrics calculation), and mean fit time and inference time
     outputs = defaultdict(list)
     fit_times = []
     pred_proba_times = []
@@ -45,6 +51,7 @@ def cross_val_predict_lpo(pipeline, X, y, cv):
 
 
 def get_cv(X):
+    # returns the appropriate CV according to the assignment requirements
     if len(X) < 50:
         return LeavePOut(2)
     elif 50 <= len(X) <= 100:
